@@ -5,6 +5,7 @@ import { getHorse } from '@/features/paarden/queries'
 import { getStableRole, canViewHorse } from '@/lib/auth/authorization'
 import { GESLACHT_LABELS, berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 import DeletePaardButton from '@/features/paarden/DeletePaardButton'
+import EigenaarBeheer from '@/features/paarden/EigenaarBeheer'
 import { getVaccinaties, getOntwormingen, getDierenartsBezzoeken } from '@/features/gezondheid/queries'
 import DeleteGezondheidButton from '@/features/gezondheid/DeleteGezondheidButton'
 import type { Vaccination, Deworming, VetVisit } from '@prisma/client'
@@ -232,6 +233,14 @@ export default async function PaardDetailPage({ params }: Props) {
           </table>
         )}
       </div>
+
+      {/* Eigenarenbeheer — alleen zichtbaar voor stalpersoneel */}
+      {canEdit && (
+        <div style={{ marginTop: 'var(--velaro-space-10)' }}>
+          <div className="label">Eigenaren</div>
+          <EigenaarBeheer horseId={id} owners={horse.owners} />
+        </div>
+      )}
 
       {canDelete && (
         <div style={{ borderTop: '1px solid var(--velaro-color-border)', paddingTop: 'var(--velaro-space-6)', marginTop: 'var(--velaro-space-4)' }}>

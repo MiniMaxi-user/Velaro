@@ -71,6 +71,46 @@ export async function updateHorse(id: string, formData: FormData) {
   redirect(`/paarden/${id}`)
 }
 
+export async function addHorseOwner(horseId: string, formData: FormData) {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) throw new Error('Paard niet gevonden')
+
+  const role = await getStableRole(user.id, horse.stableId)
+  if (!role) throw new Error('Geen toegang')
+
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  if (!email) throw new Error('E-mailadres is verplicht')
+
+  const targetUser = await prisma.user.findUnique({ where: { email } })
+  if (!targetUser)
+    throw new Error(`Geen account gevonden voor ${email}. Vraag deze persoon eerst in te loggen op Velaro.`)
+
+  const existing = await prisma.horseOwner.findUnique({
+    where: { horseId_userId: { horseId, userId: targetUser.id } },
+  })
+  if (existing) throw new Error('Deze gebruiker is al eigenaar van dit paard')
+
+  await prisma.horseOwner.create({ data: { horseId, userId: targetUser.id } })
+
+  revalidatePath(`/paarden/${horseId}`)
+}
+
+export async function removeHorseOwner(horseId: string, ownershipId: string) {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) throw new Error('Paard niet gevonden')
+
+  const role = await getStableRole(user.id, horse.stableId)
+  if (!role) throw new Error('Geen toegang')
+
+  await prisma.horseOwner.delete({ where: { id: ownershipId } })
+
+  revalidatePath(`/paarden/${horseId}`)
+}
+
 export async function deleteHorse(id: string) {
   const user = await getCurrentUser()
 

@@ -20,6 +20,11 @@ export async function isStableMember(
   return role !== null
 }
 
+export async function isAnyStableMember(userId: string): Promise<boolean> {
+  const count = await prisma.stableMember.count({ where: { userId } })
+  return count > 0
+}
+
 export async function canViewHorse(
   userId: string,
   horseId: string

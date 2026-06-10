@@ -3,17 +3,23 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const LINKS = [
+const STAL_LINKS = [
   { href: '/stal', label: 'Stal', exact: true },
   { href: '/paarden', label: 'Paarden', exact: false },
   { href: '/stal/taken', label: 'Taken', exact: false },
 ]
 
-export default function NavLinks() {
+const EIGENAAR_LINKS = [
+  { href: '/paarden', label: 'Mijn paarden', exact: false },
+]
+
+export default function NavLinks({ isStableMember }: { isStableMember: boolean }) {
   const pathname = usePathname()
+  const links = isStableMember ? STAL_LINKS : EIGENAAR_LINKS
+
   return (
     <div className="app-nav__links">
-      {LINKS.map(({ href, label, exact }) => {
+      {links.map(({ href, label, exact }) => {
         const isActive = exact ? pathname === href : pathname.startsWith(href)
         return (
           <Link

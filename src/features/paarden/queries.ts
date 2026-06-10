@@ -1,5 +1,14 @@
 import { prisma } from '@/lib/prisma'
 
+export async function getHorsesForOwner(userId: string) {
+  const ownerships = await prisma.horseOwner.findMany({
+    where: { userId },
+    include: { horse: true },
+    orderBy: { createdAt: 'asc' },
+  })
+  return ownerships.map((o) => o.horse)
+}
+
 export async function getUserStable(userId: string) {
   const member = await prisma.stableMember.findFirst({
     where: { userId },
