@@ -809,6 +809,57 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
   color: var(--velaro-color-amber);
 }
 
+/* ── Paardenprofiel secties ── */
+.profiel-sectie {
+  background: var(--velaro-color-surf-1);
+  border: 1px solid var(--velaro-color-border);
+  border-radius: var(--velaro-radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--velaro-space-4);
+}
+
+.profiel-sectie__header {
+  padding: var(--velaro-space-4) var(--velaro-space-8);
+  border-bottom: 1px solid var(--velaro-color-border);
+}
+
+.profiel-sectie__titel {
+  font-size: var(--velaro-text-xs);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--velaro-color-gold);
+}
+
+.profiel-sectie__body {
+  padding: var(--velaro-space-6) var(--velaro-space-8);
+}
+
+.profiel-sectie-label {
+  font-size: var(--velaro-text-xs);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--velaro-color-gold);
+  margin-bottom: var(--velaro-space-4);
+  padding-bottom: var(--velaro-space-3);
+  border-bottom: 1px solid var(--velaro-color-border);
+}
+
+.profiel-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--velaro-space-3);
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-white);
+  cursor: pointer;
+}
+
+.profiel-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--velaro-color-gold);
+  cursor: pointer;
+}
+
 /* ── Stal dashboard ── */
 .stal-stats {
   display: flex;

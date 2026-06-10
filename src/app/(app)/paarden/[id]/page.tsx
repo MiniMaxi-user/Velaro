@@ -14,13 +14,33 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
+function ProfielSectie({ titel, children }: { titel: string; children: React.ReactNode }) {
+  return (
+    <div className="profiel-sectie">
+      <div className="profiel-sectie__header">
+        <span className="profiel-sectie__titel">{titel}</span>
+      </div>
+      <div className="detail-grid profiel-sectie__body">{children}</div>
+    </div>
+  )
+}
+
+function Veld({ label, waarde }: { label: string; waarde: string | null | undefined }) {
+  return (
+    <div>
+      <div className="detail-item__label">{label}</div>
+      <div className="detail-item__value" style={{ color: waarde ? 'var(--white)' : 'var(--muted)' }}>
+        {waarde ?? '—'}
+      </div>
+    </div>
+  )
+}
+
 export default async function PaardDetailPage({ params }: Props) {
   const { id } = await params
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const horse = await getHorse(id)
@@ -41,20 +61,6 @@ export default async function PaardDetailPage({ params }: Props) {
 
   const leeftijd = horse.dateOfBirth ? berekenLeeftijd(new Date(horse.dateOfBirth)) : null
 
-  const velden = [
-    { label: 'Ras', waarde: horse.breed },
-    { label: 'Geslacht', waarde: horse.sex ? GESLACHT_LABELS[horse.sex] : null },
-    {
-      label: 'Geboortedatum',
-      waarde: horse.dateOfBirth
-        ? `${formatDatum(new Date(horse.dateOfBirth))}${leeftijd !== null ? ` (${leeftijd} jaar)` : ''}`
-        : null,
-    },
-    { label: 'Vachtkleur', waarde: horse.color },
-    { label: 'Chipnummer / UELN', waarde: horse.chipNumber },
-    { label: 'Stalplek / Box', waarde: horse.boxNumber },
-  ]
-
   return (
     <main className="page-container">
       <div className="page-header">
@@ -69,30 +75,57 @@ export default async function PaardDetailPage({ params }: Props) {
         <h1 className="page-title">{horse.name}</h1>
       </div>
 
-      {/* Basisprofiel */}
-      <div
-        style={{
-          background: 'var(--velaro-color-surf-1)',
-          border: '1px solid var(--velaro-color-border)',
-          borderRadius: 'var(--velaro-radius-lg)',
-          padding: 'var(--velaro-space-8)',
-          marginBottom: 'var(--velaro-space-8)',
-        }}
-      >
-        <div className="detail-grid">
-          {velden.map(({ label, waarde }) => (
-            <div key={label}>
-              <div className="detail-item__label">{label}</div>
-              <div className="detail-item__value" style={{ color: waarde ? 'var(--white)' : 'var(--muted)' }}>
-                {waarde ?? '—'}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Sectie: Algemeen */}
+      <ProfielSectie titel="Algemeen">
+        <Veld label="Ras" waarde={horse.breed} />
+        <Veld label="Geslacht" waarde={horse.sex ? GESLACHT_LABELS[horse.sex] : null} />
+        <Veld
+          label="Geboortedatum"
+          waarde={horse.dateOfBirth
+            ? `${formatDatum(new Date(horse.dateOfBirth))}${leeftijd !== null ? ` (${leeftijd} jaar)` : ''}`
+            : null}
+        />
+        <Veld label="Vachtkleur" waarde={horse.color} />
+        <Veld label="Stalplek / Box" waarde={horse.boxNumber} />
+      </ProfielSectie>
+
+      {/* Sectie: Identificatie */}
+      <ProfielSectie titel="Identificatie">
+        <Veld label="Chipnummer" waarde={horse.chipNumber} />
+        <Veld label="UELN" waarde={horse.ueln} />
+        <Veld label="Paspoortnummer" waarde={horse.passportNumber} />
+      </ProfielSectie>
+
+      {/* Sectie: Afstamming */}
+      <ProfielSectie titel="Afstamming">
+        <Veld label="Vader" waarde={horse.sireName} />
+        <Veld label="Moeder" waarde={horse.damName} />
+      </ProfielSectie>
+
+      {/* Sectie: Sport */}
+      <ProfielSectie titel="Sport">
+        <Veld label="Discipline" waarde={horse.discipline} />
+        <Veld label="Niveau" waarde={horse.disciplineLevel} />
+      </ProfielSectie>
+
+      {/* Sectie: Welzijn / EU */}
+      <ProfielSectie titel="Welzijn / EU">
+        <Veld
+          label="Slachtuitsluiting"
+          waarde={horse.excludedFromConsumption ? 'Uitgesloten' : 'Niet uitgesloten'}
+        />
+        {horse.excludedFromConsumption && (
+          <Veld
+            label="Datum uitsluiting"
+            waarde={horse.excludedFromConsumptionDate
+              ? formatDatum(new Date(horse.excludedFromConsumptionDate))
+              : null}
+          />
+        )}
+      </ProfielSectie>
 
       {/* Gezondheidsregistratie */}
-      <div style={{ marginBottom: 'var(--velaro-space-4)' }}>
+      <div style={{ margin: 'var(--velaro-space-10) 0 var(--velaro-space-4)' }}>
         <div className="label">Gezondheid</div>
       </div>
 
@@ -112,10 +145,7 @@ export default async function PaardDetailPage({ params }: Props) {
           <table className="gezondheid-tabel">
             <thead>
               <tr>
-                <th>Datum</th>
-                <th>Type vaccin</th>
-                <th>Volgende</th>
-                <th>Notities</th>
+                <th>Datum</th><th>Type vaccin</th><th>Volgende</th><th>Notities</th>
                 {canEdit && <th />}
               </tr>
             </thead>
@@ -125,11 +155,9 @@ export default async function PaardDetailPage({ params }: Props) {
                   <td>{formatDatum(new Date(v.date))}</td>
                   <td>{v.type}</td>
                   <td>
-                    {v.nextDate ? (
-                      <span className="gezondheid-next">{formatDatum(new Date(v.nextDate))}</span>
-                    ) : (
-                      <span className="gezondheid-tabel__muted">—</span>
-                    )}
+                    {v.nextDate
+                      ? <span className="gezondheid-next">{formatDatum(new Date(v.nextDate))}</span>
+                      : <span className="gezondheid-tabel__muted">—</span>}
                   </td>
                   <td className="gezondheid-tabel__muted">{v.notes ?? '—'}</td>
                   {canEdit && (
@@ -160,10 +188,7 @@ export default async function PaardDetailPage({ params }: Props) {
           <table className="gezondheid-tabel">
             <thead>
               <tr>
-                <th>Datum</th>
-                <th>Product</th>
-                <th>Volgende</th>
-                <th>Notities</th>
+                <th>Datum</th><th>Product</th><th>Volgende</th><th>Notities</th>
                 {canEdit && <th />}
               </tr>
             </thead>
@@ -173,11 +198,9 @@ export default async function PaardDetailPage({ params }: Props) {
                   <td>{formatDatum(new Date(o.date))}</td>
                   <td>{o.product}</td>
                   <td>
-                    {o.nextDate ? (
-                      <span className="gezondheid-next">{formatDatum(new Date(o.nextDate))}</span>
-                    ) : (
-                      <span className="gezondheid-tabel__muted">—</span>
-                    )}
+                    {o.nextDate
+                      ? <span className="gezondheid-next">{formatDatum(new Date(o.nextDate))}</span>
+                      : <span className="gezondheid-tabel__muted">—</span>}
                   </td>
                   <td className="gezondheid-tabel__muted">{o.notes ?? '—'}</td>
                   {canEdit && (
@@ -208,10 +231,7 @@ export default async function PaardDetailPage({ params }: Props) {
           <table className="gezondheid-tabel">
             <thead>
               <tr>
-                <th>Datum</th>
-                <th>Dierenarts</th>
-                <th>Reden</th>
-                <th>Notities</th>
+                <th>Datum</th><th>Dierenarts</th><th>Reden</th><th>Notities</th>
                 {canEdit && <th />}
               </tr>
             </thead>
@@ -234,7 +254,7 @@ export default async function PaardDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* Eigenarenbeheer — alleen zichtbaar voor stalpersoneel */}
+      {/* Eigenarenbeheer — alleen stalpersoneel */}
       {canEdit && (
         <div style={{ marginTop: 'var(--velaro-space-10)' }}>
           <div className="label">Eigenaren</div>
@@ -243,7 +263,7 @@ export default async function PaardDetailPage({ params }: Props) {
       )}
 
       {canDelete && (
-        <div style={{ borderTop: '1px solid var(--velaro-color-border)', paddingTop: 'var(--velaro-space-6)', marginTop: 'var(--velaro-space-4)' }}>
+        <div style={{ borderTop: '1px solid var(--velaro-color-border)', paddingTop: 'var(--velaro-space-6)', marginTop: 'var(--velaro-space-8)' }}>
           <DeletePaardButton horseId={id} />
         </div>
       )}

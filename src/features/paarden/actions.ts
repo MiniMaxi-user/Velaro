@@ -24,14 +24,31 @@ function parseHorseFormData(formData: FormData) {
   const dateOfBirthStr = formData.get('dateOfBirth') as string
   const sexStr = formData.get('sex') as string
 
+  const chipNumber = (formData.get('chipNumber') as string)?.trim() || null
+  if (chipNumber && !/^\d{15}$/.test(chipNumber)) {
+    throw new Error('Chipnummer moet exact 15 cijfers bevatten')
+  }
+
+  const excludedFromConsumption = formData.get('excludedFromConsumption') === 'true'
+  const excludedDateStr = formData.get('excludedFromConsumptionDate') as string
+
   return {
     name,
     breed: (formData.get('breed') as string)?.trim() || null,
     dateOfBirth: dateOfBirthStr ? new Date(dateOfBirthStr) : null,
     sex: sexStr ? (sexStr as HorseSex) : null,
     color: (formData.get('color') as string)?.trim() || null,
-    chipNumber: (formData.get('chipNumber') as string)?.trim() || null,
+    chipNumber,
+    ueln: (formData.get('ueln') as string)?.trim() || null,
+    passportNumber: (formData.get('passportNumber') as string)?.trim() || null,
     boxNumber: (formData.get('boxNumber') as string)?.trim() || null,
+    sireName: (formData.get('sireName') as string)?.trim() || null,
+    damName: (formData.get('damName') as string)?.trim() || null,
+    discipline: (formData.get('discipline') as string)?.trim() || null,
+    disciplineLevel: (formData.get('disciplineLevel') as string)?.trim() || null,
+    excludedFromConsumption,
+    excludedFromConsumptionDate:
+      excludedFromConsumption && excludedDateStr ? new Date(excludedDateStr) : null,
   }
 }
 

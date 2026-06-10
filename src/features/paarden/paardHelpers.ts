@@ -1,5 +1,13 @@
 import type { HorseSex } from '@prisma/client'
 
+export const DISCIPLINE_OPTIES = [
+  'Dressuur',
+  'Springen',
+  'Eventing',
+  'Mennen',
+  'Overig',
+] as const
+
 export const GESLACHT_LABELS: Record<HorseSex, string> = {
   MARE: 'Merrie',
   STALLION: 'Hengst',

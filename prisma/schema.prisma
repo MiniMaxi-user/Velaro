@@ -79,8 +79,22 @@ model Horse {
   dateOfBirth DateTime?
   sex         HorseSex?
   color       String? // vachtkleur
-  chipNumber  String? // chip/UELN
+  chipNumber  String? // chip (15 cijfers)
+  ueln        String? // UELN (internationaal ID)
+  passportNumber String? // paspoortnummer
   boxNumber   String? // stalplek binnen de stal
+
+  // Afstamming
+  sireName    String? // vader
+  damName     String? // moeder
+
+  // Sport
+  discipline      String?
+  disciplineLevel String?
+
+  // Welzijn / EU
+  excludedFromConsumption     Boolean   @default(false)
+  excludedFromConsumptionDate DateTime?
 
   // Een paard staat (in de MVP) op precies één pensionstal.
   stableId String @db.Uuid
