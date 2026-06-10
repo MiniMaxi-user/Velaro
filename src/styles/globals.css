@@ -743,3 +743,68 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
   display: block;
   margin-bottom: var(--velaro-space-2);
 }
+
+/* ── Gezondheidsregistratie ── */
+.gezondheid-sectie {
+  background: var(--velaro-color-surf-1);
+  border: 1px solid var(--velaro-color-border);
+  border-radius: var(--velaro-radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--velaro-space-6);
+}
+
+.gezondheid-sectie__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--velaro-space-5) var(--velaro-space-6);
+  border-bottom: 1px solid var(--velaro-color-border);
+}
+
+.gezondheid-sectie__titel {
+  font-size: var(--velaro-text-xs);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--velaro-color-gold);
+}
+
+.gezondheid-tabel {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gezondheid-tabel th {
+  padding: 10px 20px;
+  font-size: var(--velaro-text-xs);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--velaro-color-muted);
+  text-align: left;
+  font-weight: 500;
+}
+
+.gezondheid-tabel td {
+  padding: 12px 20px;
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-white);
+  border-top: 1px solid var(--velaro-color-border);
+  vertical-align: middle;
+}
+
+.gezondheid-tabel tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+.gezondheid-tabel__acties { text-align: right; white-space: nowrap; }
+
+.gezondheid-tabel__muted { color: var(--velaro-color-muted); }
+
+.gezondheid-leeg {
+  padding: var(--velaro-space-8) var(--velaro-space-6);
+  color: var(--velaro-color-muted);
+  font-size: var(--velaro-text-sm);
+  text-align: center;
+}
+
+.gezondheid-next {
+  font-size: var(--velaro-text-xs);
+  color: var(--velaro-color-amber);
+}

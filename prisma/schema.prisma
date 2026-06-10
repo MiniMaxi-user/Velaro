@@ -88,6 +88,11 @@ model Horse {
   // Eigenaar(s) van het paard. Many-to-many via HorseOwner.
   owners HorseOwner[]
 
+  // Gezondheidsregistratie (stap 3)
+  vaccinations Vaccination[]
+  dewormings   Deworming[]
+  vetVisits    VetVisit[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -113,6 +118,50 @@ model HorseOwner {
 
   @@unique([horseId, userId])
   @@index([userId])
+}
+
+// ── Gezondheidsregistratie ───────────────────────────────────────────────────
+
+model Vaccination {
+  id        String    @id @default(uuid()) @db.Uuid
+  horseId   String    @db.Uuid
+  date      DateTime
+  type      String
+  nextDate  DateTime?
+  notes     String?
+  createdAt DateTime  @default(now())
+
+  horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@index([horseId])
+}
+
+model Deworming {
+  id        String    @id @default(uuid()) @db.Uuid
+  horseId   String    @db.Uuid
+  date      DateTime
+  product   String
+  nextDate  DateTime?
+  notes     String?
+  createdAt DateTime  @default(now())
+
+  horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@index([horseId])
+}
+
+model VetVisit {
+  id        String   @id @default(uuid()) @db.Uuid
+  horseId   String   @db.Uuid
+  date      DateTime
+  vet       String?
+  reason    String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@index([horseId])
 }
 
 // ── Autorisatie-logica (in app-laag, niet in schema) ─────────────────────────
