@@ -45,6 +45,7 @@ model Stable {
 
   members StableMember[]
   horses  Horse[]
+  tasks   Task[]
 }
 
 // Koppelt een gebruiker aan een stal met een rol (staf/eigenaar van de stal).
@@ -92,6 +93,7 @@ model Horse {
   vaccinations Vaccination[]
   dewormings   Deworming[]
   vetVisits    VetVisit[]
+  tasks        Task[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -162,6 +164,24 @@ model VetVisit {
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
   @@index([horseId])
+}
+
+// ── Dagelijkse taken ─────────────────────────────────────────────────────────
+
+model Task {
+  id          String    @id @default(uuid()) @db.Uuid
+  stableId    String    @db.Uuid
+  horseId     String?   @db.Uuid
+  title       String
+  date        DateTime  @db.Date
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  stable Stable  @relation(fields: [stableId], references: [id], onDelete: Cascade)
+  horse  Horse?  @relation(fields: [horseId], references: [id], onDelete: SetNull)
+
+  @@index([stableId, date])
 }
 
 // ── Autorisatie-logica (in app-laag, niet in schema) ─────────────────────────
