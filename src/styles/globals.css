@@ -381,3 +381,233 @@ body {
   height: 1px;
   background: var(--velaro-color-gold);
 }
+
+/* ── App navigation ── */
+.app-nav {
+  background: var(--velaro-color-surf-1);
+  border-bottom: 1px solid var(--velaro-color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-nav__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--velaro-space-8);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: var(--velaro-space-8);
+}
+
+.app-nav__logo { display: flex; align-items: center; }
+
+.app-nav__links {
+  display: flex;
+  gap: var(--velaro-space-6);
+  flex: 1;
+}
+
+.app-nav__link {
+  font-size: var(--velaro-text-sm);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--velaro-color-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.app-nav__link:hover,
+.app-nav__link--active {
+  color: var(--velaro-color-gold);
+}
+
+.app-nav__signout {
+  padding: 8px 18px;
+  font-size: 11px;
+}
+
+/* ── Page layout ── */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--velaro-space-10) var(--velaro-space-8);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--velaro-space-8);
+}
+
+.page-title {
+  font-family: var(--velaro-font-serif);
+  font-size: var(--velaro-text-xl);
+  font-weight: 300;
+  line-height: 1.1;
+}
+
+.page-title em {
+  font-style: italic;
+  color: var(--velaro-color-gold);
+}
+
+/* ── Paarden grid & kaart ── */
+.paarden-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--velaro-space-5);
+}
+
+.paard-card {
+  background: var(--velaro-color-surf-1);
+  border: 1px solid var(--velaro-color-border);
+  border-radius: var(--velaro-radius-lg);
+  padding: var(--velaro-space-6);
+  text-decoration: none;
+  display: block;
+  transition: var(--velaro-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.paard-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--velaro-color-gold), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.paard-card:hover {
+  border-color: rgba(216, 189, 113, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.paard-card:hover::before { opacity: 1; }
+
+.paard-card__naam {
+  font-family: var(--velaro-font-serif);
+  font-size: var(--velaro-text-lg);
+  font-weight: 400;
+  color: var(--velaro-color-white);
+  margin-bottom: var(--velaro-space-2);
+}
+
+.paard-card__meta {
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-muted);
+  display: flex;
+  gap: var(--velaro-space-3);
+  flex-wrap: wrap;
+}
+
+.paard-card__badge {
+  display: inline-block;
+  background: rgba(216, 189, 113, 0.1);
+  border: 1px solid rgba(216, 189, 113, 0.2);
+  color: var(--velaro-color-gold);
+  font-size: var(--velaro-text-xs);
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: var(--velaro-radius-pill);
+}
+
+/* ── Detail view ── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--velaro-space-6);
+}
+
+.detail-item__label {
+  font-size: var(--velaro-text-xs);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--velaro-color-muted);
+  margin-bottom: var(--velaro-space-1);
+}
+
+.detail-item__value {
+  font-size: var(--velaro-text-base);
+  color: var(--velaro-color-white);
+}
+
+/* ── Form card & grid ── */
+.form-card {
+  background: var(--velaro-color-surf-1);
+  border: 1px solid var(--velaro-color-border);
+  border-radius: var(--velaro-radius-lg);
+  padding: var(--velaro-space-10);
+  max-width: 720px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--velaro-space-6);
+}
+
+.form-grid--full { grid-column: 1 / -1; }
+
+select.input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23A3A3A3' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+input[type="date"].input::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+/* ── Action buttons ── */
+.action-buttons {
+  display: flex;
+  gap: var(--velaro-space-3);
+  margin-top: var(--velaro-space-8);
+  align-items: center;
+}
+
+.btn-danger {
+  background: transparent;
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  padding: 15px 36px;
+  border-radius: var(--velaro-radius-sm);
+  font-size: var(--velaro-text-sm);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--velaro-transition);
+}
+
+.btn-danger:hover {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: var(--velaro-space-16) var(--velaro-space-8);
+  color: var(--velaro-color-muted);
+}
+
+.empty-state__title {
+  font-family: var(--velaro-font-serif);
+  font-size: var(--velaro-text-lg);
+  margin-bottom: var(--velaro-space-3);
+  color: var(--velaro-color-white);
+}
