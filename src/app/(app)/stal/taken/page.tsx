@@ -3,10 +3,12 @@ import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable } from '@/features/paarden/queries'
 import { getHorsesForStable } from '@/features/paarden/queries'
-import { getTasksForDate } from '@/features/taken/queries'
+import { getTasksForDate, getRecurringTasksForStable } from '@/features/taken/queries'
+import { ensureRecurringTasksForDate } from '@/features/taken/actions'
 import TaakForm from '@/features/taken/TaakForm'
 import TaakItem from '@/features/taken/TaakItem'
 import TaakDatumKiezer from '@/features/taken/TaakDatumKiezer'
+import TerugkerendeTakenBeheer from '@/features/taken/TerugkerendeTakenBeheer'
 
 function formatDate(d: Date) {
   return d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -48,9 +50,13 @@ export default async function TakenPage({
   today.setHours(12, 0, 0, 0)
   const isToday = toDateParam(date) === toDateParam(today)
 
-  const [tasks, horses] = await Promise.all([
+  // Zorg dat terugkerende taken voor deze dag als Task-rijen bestaan
+  await ensureRecurringTasksForDate(stable.id, date)
+
+  const [tasks, horses, recurringTasks] = await Promise.all([
     getTasksForDate(stable.id, date),
     getHorsesForStable(stable.id),
+    getRecurringTasksForStable(stable.id),
   ])
 
   const open = tasks.filter((t) => !t.isCompleted)
@@ -121,6 +127,11 @@ export default async function TakenPage({
           </div>
         </div>
       )}
+
+      <TerugkerendeTakenBeheer
+        recurringTasks={recurringTasks}
+        horses={horses.map((h) => ({ id: h.id, name: h.name }))}
+      />
     </main>
   )
 }

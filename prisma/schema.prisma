@@ -46,9 +46,10 @@ model Stable {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  members StableMember[]
-  horses  Horse[]
-  tasks   Task[]
+  members        StableMember[]
+  horses         Horse[]
+  tasks          Task[]
+  recurringTasks RecurringTask[]
 }
 
 // Koppelt een gebruiker aan een stal met een rol (staf/eigenaar van de stal).
@@ -107,11 +108,12 @@ model Horse {
   owners HorseOwner[]
 
   // Gezondheidsregistratie (stap 3)
-  vaccinations Vaccination[]
-  dewormings   Deworming[]
-  vetVisits    VetVisit[]
-  tasks        Task[]
-  stableNotes  StableNote[]
+  vaccinations   Vaccination[]
+  dewormings     Deworming[]
+  vetVisits      VetVisit[]
+  tasks          Task[]
+  stableNotes    StableNote[]
+  recurringTasks RecurringTask[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -215,6 +217,31 @@ model StableNote {
   author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([horseId])
+}
+
+// ── Terugkerende taken ───────────────────────────────────────────────────────
+
+enum RecurringFreq {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model RecurringTask {
+  id         String        @id @default(uuid()) @db.Uuid
+  stableId   String        @db.Uuid
+  horseId    String?       @db.Uuid
+  title      String
+  frequency  RecurringFreq
+  dayOfWeek  Int?          // 0=ma t/m 6=zo; alleen bij WEEKLY
+  dayOfMonth Int?          // 1-28; alleen bij MONTHLY
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+
+  stable Stable  @relation(fields: [stableId], references: [id], onDelete: Cascade)
+  horse  Horse?  @relation(fields: [horseId], references: [id], onDelete: SetNull)
+
+  @@index([stableId])
 }
 
 // ── Autorisatie-logica (in app-laag, niet in schema) ─────────────────────────

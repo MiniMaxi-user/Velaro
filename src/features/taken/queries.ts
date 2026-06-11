@@ -1,5 +1,13 @@
 import { prisma } from '@/lib/prisma'
 
+export async function getRecurringTasksForStable(stableId: string) {
+  return prisma.recurringTask.findMany({
+    where: { stableId, isActive: true },
+    include: { horse: { select: { id: true, name: true } } },
+    orderBy: { createdAt: 'asc' },
+  })
+}
+
 export async function getTasksForDate(stableId: string, date: Date) {
   const start = new Date(date)
   start.setHours(0, 0, 0, 0)

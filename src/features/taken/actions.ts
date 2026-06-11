@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { getStableRole } from '@/lib/auth/authorization'
 import { getUserStable } from '@/features/paarden/queries'
+import { getRecurringTasksForStable } from './queries'
+import { shouldRunToday } from './recurringHelpers'
 
 async function getStaffContext() {
   const supabase = await createClient()
@@ -95,6 +97,100 @@ export async function updateTask(
     where: { id: taskId },
     data: { title, date: new Date(dateStr), horseId: horseId || null },
   })
+
+  revalidatePath('/stal/taken')
+}
+
+/**
+ * Zorgt dat alle terugkerende taken voor de gegeven datum als Task-rijen
+ * bestaan. Idempotent: een bestaande rij wordt nooit dubbel aangemaakt.
+ */
+export async function ensureRecurringTasksForDate(stableId: string, date: Date) {
+  const templates = await getRecurringTasksForStable(stableId)
+
+  for (const template of templates) {
+    if (!shouldRunToday(template, date)) continue
+
+    // Idempotent check: bestaat er al een taak voor dit sjabloon op deze dag?
+    const existing = await prisma.task.findFirst({
+      where: {
+        stableId,
+        horseId: template.horseId ?? null,
+        title: template.title,
+        date: {
+          gte: new Date(new Date(date).setHours(0, 0, 0, 0)),
+          lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
+        },
+      },
+    })
+
+    if (!existing) {
+      const taskDate = new Date(date)
+      taskDate.setHours(12, 0, 0, 0)
+      await prisma.task.create({
+        data: {
+          stableId,
+          horseId: template.horseId ?? null,
+          title: template.title,
+          date: taskDate,
+        },
+      })
+    }
+  }
+}
+
+export async function createRecurringTask(
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const { stable } = await getStaffContext()
+
+  const title = (formData.get('title') as string)?.trim()
+  const frequency = formData.get('frequency') as string
+  const horseId = (formData.get('horseId') as string) || null
+
+  if (!title) return { error: 'Omschrijving is verplicht' }
+  if (!['DAILY', 'WEEKLY', 'MONTHLY'].includes(frequency)) {
+    return { error: 'Ongeldige frequentie' }
+  }
+
+  let dayOfWeek: number | null = null
+  let dayOfMonth: number | null = null
+
+  if (frequency === 'WEEKLY') {
+    const dow = parseInt(formData.get('dayOfWeek') as string, 10)
+    if (isNaN(dow) || dow < 0 || dow > 6) return { error: 'Ongeldige weekdag' }
+    dayOfWeek = dow
+  }
+
+  if (frequency === 'MONTHLY') {
+    const dom = parseInt(formData.get('dayOfMonth') as string, 10)
+    if (isNaN(dom) || dom < 1 || dom > 28) return { error: 'Dag moet tussen 1 en 28 liggen' }
+    dayOfMonth = dom
+  }
+
+  await prisma.recurringTask.create({
+    data: {
+      stableId: stable.id,
+      horseId: horseId || null,
+      title,
+      frequency: frequency as 'DAILY' | 'WEEKLY' | 'MONTHLY',
+      dayOfWeek,
+      dayOfMonth,
+    },
+  })
+
+  revalidatePath('/stal/taken')
+}
+
+export async function deleteRecurringTask(
+  id: string
+): Promise<{ error: string } | undefined> {
+  const { stable } = await getStaffContext()
+
+  const template = await prisma.recurringTask.findUnique({ where: { id } })
+  if (!template || template.stableId !== stable.id) return { error: 'Sjabloon niet gevonden' }
+
+  await prisma.recurringTask.delete({ where: { id } })
 
   revalidatePath('/stal/taken')
 }
