@@ -3,7 +3,11 @@
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function SignOutButton() {
+interface Props {
+  collapsed?: boolean
+}
+
+export default function SignOutButton({ collapsed }: Props) {
   const router = useRouter()
 
   async function handleSignOut() {
@@ -13,8 +17,13 @@ export default function SignOutButton() {
   }
 
   return (
-    <button onClick={handleSignOut} className="btn-ghost app-nav__signout">
-      Uitloggen
+    <button
+      onClick={handleSignOut}
+      className="sidebar-toggle-btn"
+      title="Uitloggen"
+      aria-label="Uitloggen"
+    >
+      ⏻
     </button>
   )
 }

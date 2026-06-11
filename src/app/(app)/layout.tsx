@@ -1,19 +1,21 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import AppNav from '@/components/AppNav'
+import Sidebar from '@/components/Sidebar'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
 
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <AppNav />
-      {children}
+    <div className="app-shell">
+      <Sidebar />
+      <main className="app-main">
+        <div className="content-area">
+          {children}
+        </div>
+      </main>
     </div>
   )
 }
