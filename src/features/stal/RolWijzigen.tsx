@@ -20,12 +20,9 @@ export default function RolWijzigen({ memberId, currentRole }: Props) {
   const boundAction = updateMemberRole.bind(null, memberId)
 
   async function action(prev: State, formData: FormData): Promise<State> {
-    try {
-      await boundAction(formData)
-      return {}
-    } catch (e) {
-      return { error: (e as Error).message }
-    }
+    const result = await boundAction(formData)
+    if (result?.error) return { error: result.error }
+    return {}
   }
 
   const [state, formAction] = useActionState(action, {})

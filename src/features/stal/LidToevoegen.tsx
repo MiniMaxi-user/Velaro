@@ -7,12 +7,9 @@ import SubmitButton from '@/components/SubmitButton'
 type State = { error?: string; success?: boolean }
 
 async function addMemberAction(prev: State, formData: FormData): Promise<State> {
-  try {
-    await addMember(formData)
-    return { success: true }
-  } catch (e) {
-    return { error: (e as Error).message }
-  }
+  const result = await addMember(formData)
+  if (result?.error) return { error: result.error }
+  return { success: true }
 }
 
 export default function LidToevoegen() {

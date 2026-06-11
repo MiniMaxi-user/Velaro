@@ -8,7 +8,10 @@ import { getStableRole } from '@/lib/auth/authorization'
 import { getUserStable } from '@/features/paarden/queries'
 import type { StableRole } from '@prisma/client'
 
-async function getOwnerContext() {
+async function getOwnerContext(): Promise<
+  | { ok: true; currentUserId: string; stable: NonNullable<Awaited<ReturnType<typeof getUserStable>>> }
+  | { ok: false; error: string }
+> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -16,68 +19,78 @@ async function getOwnerContext() {
   if (!user) redirect('/login')
 
   const stable = await getUserStable(user.id)
-  if (!stable) throw new Error('Geen stal gevonden')
+  if (!stable) return { ok: false, error: 'Geen stal gevonden' }
 
   const role = await getStableRole(user.id, stable.id)
-  if (role !== 'OWNER') throw new Error('Alleen staleigenaren kunnen leden beheren')
+  if (role !== 'OWNER') return { ok: false, error: 'Alleen staleigenaren kunnen leden beheren' }
 
-  return { currentUserId: user.id, stable }
+  return { ok: true, currentUserId: user.id, stable }
 }
 
-export async function addMember(formData: FormData) {
-  const { stable } = await getOwnerContext()
+export async function addMember(
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const ctx = await getOwnerContext()
+  if (!ctx.ok) return { error: ctx.error }
 
   const email = (formData.get('email') as string)?.trim().toLowerCase()
   const role = formData.get('role') as StableRole
 
-  if (!email) throw new Error('E-mailadres is verplicht')
-  if (!['OWNER', 'STAFF'].includes(role)) throw new Error('Ongeldige rol')
+  if (!email) return { error: 'E-mailadres is verplicht' }
+  if (!['OWNER', 'STAFF'].includes(role)) return { error: 'Ongeldige rol' }
 
   const targetUser = await prisma.user.findUnique({ where: { email } })
   if (!targetUser)
-    throw new Error(
-      `Geen account gevonden voor ${email}. Vraag deze persoon eerst in te loggen op Velaro.`
-    )
+    return {
+      error: `Geen account gevonden voor ${email}. Vraag deze persoon eerst in te loggen op Velaro.`,
+    }
 
   const existing = await prisma.stableMember.findUnique({
-    where: { stableId_userId: { stableId: stable.id, userId: targetUser.id } },
+    where: { stableId_userId: { stableId: ctx.stable.id, userId: targetUser.id } },
   })
-  if (existing) throw new Error('Deze gebruiker is al lid van de stal')
+  if (existing) return { error: 'Deze gebruiker is al lid van de stal' }
 
   await prisma.stableMember.create({
-    data: { stableId: stable.id, userId: targetUser.id, role },
+    data: { stableId: ctx.stable.id, userId: targetUser.id, role },
   })
 
   revalidatePath('/stal/leden')
 }
 
-export async function updateMemberRole(memberId: string, formData: FormData) {
-  const { currentUserId, stable } = await getOwnerContext()
+export async function updateMemberRole(
+  memberId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const ctx = await getOwnerContext()
+  if (!ctx.ok) return { error: ctx.error }
 
   const member = await prisma.stableMember.findUnique({ where: { id: memberId } })
-  if (!member || member.stableId !== stable.id) throw new Error('Lid niet gevonden')
-  if (member.userId === currentUserId) throw new Error('Je kunt je eigen rol niet wijzigen')
+  if (!member || member.stableId !== ctx.stable.id) return { error: 'Lid niet gevonden' }
+  if (member.userId === ctx.currentUserId) return { error: 'Je kunt je eigen rol niet wijzigen' }
 
   const role = formData.get('role') as StableRole
-  if (!['OWNER', 'STAFF'].includes(role)) throw new Error('Ongeldige rol')
+  if (!['OWNER', 'STAFF'].includes(role)) return { error: 'Ongeldige rol' }
 
   await prisma.stableMember.update({ where: { id: memberId }, data: { role } })
 
   revalidatePath('/stal/leden')
 }
 
-export async function removeMember(memberId: string) {
-  const { currentUserId, stable } = await getOwnerContext()
+export async function removeMember(
+  memberId: string
+): Promise<{ error: string } | undefined> {
+  const ctx = await getOwnerContext()
+  if (!ctx.ok) return { error: ctx.error }
 
   const member = await prisma.stableMember.findUnique({ where: { id: memberId } })
-  if (!member || member.stableId !== stable.id) throw new Error('Lid niet gevonden')
-  if (member.userId === currentUserId) throw new Error('Je kunt jezelf niet verwijderen')
+  if (!member || member.stableId !== ctx.stable.id) return { error: 'Lid niet gevonden' }
+  if (member.userId === ctx.currentUserId) return { error: 'Je kunt jezelf niet verwijderen' }
 
   if (member.role === 'OWNER') {
     const ownerCount = await prisma.stableMember.count({
-      where: { stableId: stable.id, role: 'OWNER' },
+      where: { stableId: ctx.stable.id, role: 'OWNER' },
     })
-    if (ownerCount <= 1) throw new Error('Er moet minimaal één eigenaar overblijven')
+    if (ownerCount <= 1) return { error: 'Er moet minimaal één eigenaar overblijven' }
   }
 
   await prisma.stableMember.delete({ where: { id: memberId } })
