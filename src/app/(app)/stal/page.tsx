@@ -6,6 +6,7 @@ import { getTaskCountsForDate } from '@/features/taken/queries'
 import { getStableRole, canCreateStable } from '@/lib/auth/authorization'
 import { getAankomendGezondheidActies } from '@/features/gezondheid/queries'
 import AankomendZorgPanel from '@/features/gezondheid/AankomendZorgPanel'
+import { prisma } from '@/lib/prisma'
 
 function toDateParam(d: Date) {
   return d.toISOString().slice(0, 10)
@@ -22,6 +23,10 @@ export default async function StalPage() {
   ])
 
   if (!stable) {
+    // Paardeneigenaar zonder stalbeheerrol: doorsturen naar eigenaar-dashboard
+    const isHorseOwner = await prisma.horseOwner.count({ where: { userId: user.id } })
+    if (isHorseOwner > 0) redirect('/eigenaar')
+
     return (
       <div className="empty-state">
         <div className="empty-state__title">Geen actieve stal</div>

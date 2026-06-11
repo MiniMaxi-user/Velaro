@@ -14,7 +14,8 @@ const STAL_NAV = [
 ]
 
 const EIGENAAR_NAV = [
-  { href: '/paarden', label: 'Mijn paarden', icon: 'horse', exact: false },
+  { href: '/eigenaar', label: 'Dashboard',    icon: 'dashboard', exact: true },
+  { href: '/paarden',  label: 'Mijn paarden', icon: 'horse',     exact: false },
 ]
 
 const ADMIN_NAV = [
