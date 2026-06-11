@@ -1,9 +1,10 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 
 const COOKIE_NAME = 'velaro-active-stable'
 
-export async function getActiveStableId(userId: string): Promise<string | null> {
+export const getActiveStableId = cache(async (userId: string): Promise<string | null> => {
   const cookieStore = await cookies()
   const cookieStableId = cookieStore.get(COOKIE_NAME)?.value
 
@@ -19,7 +20,7 @@ export async function getActiveStableId(userId: string): Promise<string | null> 
     orderBy: { createdAt: 'asc' },
   })
   return member?.stableId ?? null
-}
+})
 
 export async function getActiveStable(userId: string) {
   const stableId = await getActiveStableId(userId)
