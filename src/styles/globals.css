@@ -468,6 +468,8 @@ a { color: inherit; text-decoration: none; }
   transition: var(--velaro-transition);
   border: 1px solid transparent;
   user-select: none;
+  background: transparent;
+  font-family: var(--velaro-font-sans);
 }
 
 .topbar-user-avatar {
@@ -496,12 +498,13 @@ a { color: inherit; text-decoration: none; }
   position: relative;
 }
 
-.topbar-user-menu:hover .topbar-user {
+.topbar-user-menu--open .topbar-user,
+.topbar-user:hover {
   background: var(--velaro-color-surf-2);
   border-color: var(--velaro-color-border);
 }
 
-.topbar-user-menu:hover .topbar-user-chevron { transform: rotate(180deg); }
+.topbar-user-menu--open .topbar-user-chevron { transform: rotate(180deg); }
 
 .topbar-user-dropdown {
   position: absolute;
@@ -520,7 +523,7 @@ a { color: inherit; text-decoration: none; }
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.topbar-user-menu:hover .topbar-user-dropdown {
+.topbar-user-menu--open .topbar-user-dropdown {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);

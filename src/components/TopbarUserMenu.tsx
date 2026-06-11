@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Props {
@@ -10,6 +11,20 @@ interface Props {
 
 export default function TopbarUserMenu({ initials, displayName }: Props) {
   const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -18,14 +33,20 @@ export default function TopbarUserMenu({ initials, displayName }: Props) {
   }
 
   return (
-    <div className="topbar-user-menu">
-      <div className="topbar-user">
+    <div className={`topbar-user-menu${open ? ' topbar-user-menu--open' : ''}`} ref={menuRef}>
+      <button
+        type="button"
+        className="topbar-user"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
         <div className="topbar-user-avatar">{initials}</div>
         <span className="topbar-user-name">{displayName}</span>
         <svg className="topbar-user-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none">
           <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
-      </div>
+      </button>
       <div className="topbar-user-dropdown">
         <div className="topbar-user-dropdown-header">
           <div className="topbar-user-avatar topbar-user-avatar--lg">{initials}</div>
