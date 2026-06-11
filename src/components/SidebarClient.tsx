@@ -18,7 +18,9 @@ const EIGENAAR_NAV = [
 ]
 
 const ADMIN_NAV = [
-  { href: '/admin/eigenaren', label: 'Eigenaren', icon: 'team', exact: false },
+  { href: '/admin/eigenaren', label: 'Eigenaren', icon: 'team',    exact: false },
+  { href: '/admin/stallen',   label: 'Stallen',   icon: 'stallen', exact: false },
+  { href: '/admin/paarden',   label: 'Paarden',   icon: 'horse',   exact: false },
 ]
 
 function NavIcon({ name }: { name: string }) {
@@ -86,8 +88,8 @@ export default function SidebarClient({
   const [collapsed, setCollapsed] = useState(false)
   const switchFormRef = useRef<HTMLFormElement>(null)
 
-  const mainLinks = isStableMember ? STAL_NAV : EIGENAAR_NAV
-  const extraLinks = canManageStables
+  const mainLinks = isPlatformAdmin ? [] : (isStableMember ? STAL_NAV : EIGENAAR_NAV)
+  const extraLinks = !isPlatformAdmin && canManageStables
     ? [{ href: '/stallen', label: 'Mijn stallen', icon: 'stallen', exact: false }]
     : []
 
