@@ -2,12 +2,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import NavLinks from './NavLinks'
 import SignOutButton from './SignOutButton'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { isAnyStableMember } from '@/lib/auth/authorization'
 
 export default async function AppNav() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   const stableMember = user ? await isAnyStableMember(user.id) : false
 
   return (

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser, getDbUser } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { getActiveStableId } from '@/lib/active-stable'
 import { getMemberships } from '@/lib/auth/authorization'
@@ -10,8 +10,7 @@ const ROL_LABELS: Record<string, string> = {
 }
 
 export default async function Sidebar() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   if (!user) return null
 

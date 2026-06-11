@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
+import { getDbUser } from '@/lib/auth/session'
 import type { StableRole } from '@prisma/client'
 
 /**
@@ -16,10 +17,7 @@ export const getMemberships = cache(async (userId: string) => {
 })
 
 export async function isPlatformAdmin(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { isPlatformAdmin: true },
-  })
+  const user = await getDbUser(userId)
   return user?.isPlatformAdmin ?? false
 }
 
@@ -29,10 +27,7 @@ export async function isPlatformAdmin(userId: string): Promise<boolean> {
  * in plaats van een extra COUNT-query.
  */
 export async function canCreateStable(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { isPlatformAdmin: true, maxStables: true },
-  })
+  const user = await getDbUser(userId)
   if (!user) return false
   if (user.isPlatformAdmin) return true
 

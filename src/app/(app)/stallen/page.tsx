@@ -1,18 +1,16 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { prisma } from '@/lib/prisma'
+import { getAuthUser, getDbUser } from '@/lib/auth/session'
 import { getUserOwnedStables } from '@/features/stallen/queries'
 import { canCreateStable } from '@/lib/auth/authorization'
 
 export default async function StallenPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const [memberships, dbUser, canCreate] = await Promise.all([
     getUserOwnedStables(user.id),
-    prisma.user.findUnique({ where: { id: user.id }, select: { maxStables: true, isPlatformAdmin: true } }),
+    getDbUser(user.id),
     canCreateStable(user.id),
   ])
 

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { getHorse } from '@/features/paarden/queries'
 import { getStableRole } from '@/lib/auth/authorization'
 import EigenaarAanmakenForm from '@/features/paarden/EigenaarAanmakenForm'
@@ -12,8 +12,7 @@ interface Props {
 export default async function EigenaarNieuwPage({ params }: Props) {
   const { id } = await params
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const horse = await getHorse(id)

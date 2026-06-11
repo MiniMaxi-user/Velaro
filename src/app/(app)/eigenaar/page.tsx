@@ -1,13 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { getHorsesForOwner } from '@/features/paarden/queries'
 import { getNotesForHorse } from '@/features/mededelingen/queries'
 import { berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 
 export default async function EigenaarPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const horses = await getHorsesForOwner(user.id)

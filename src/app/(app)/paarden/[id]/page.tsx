@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { getHorse } from '@/features/paarden/queries'
 import { getStableRole, canViewHorse } from '@/lib/auth/authorization'
 import { GESLACHT_LABELS, berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
@@ -28,8 +28,7 @@ function Veld({ label, waarde }: { label: string; waarde: string | null | undefi
 export default async function PaardDetailPage({ params }: Props) {
   const { id } = await params
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const horse = await getHorse(id)
@@ -64,7 +63,11 @@ export default async function PaardDetailPage({ params }: Props) {
         </div>
         <div className="page-header-actions">
           {canEdit && (
-            <Link href={`/paarden/${id}/bewerken`} className="btn-secondary">Bewerken</Link>
+            <Link href={`/paarden/${id}/bewerken`} className="btn-icon" title="Bewerken">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+              </svg>
+            </Link>
           )}
           {canDelete && <DeletePaardButton horseId={id} />}
         </div>
