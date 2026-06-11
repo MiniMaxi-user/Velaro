@@ -1,19 +1,26 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { toggleTask, deleteTask } from './actions'
+import { toggleTask, deleteTask, updateTask } from './actions'
+
+type Horse = { id: string; name: string }
 
 type Task = {
   id: string
   title: string
+  date: Date
   isCompleted: boolean
   horse: { id: string; name: string } | null
 }
 
-export default function TaakItem({ task }: { task: Task }) {
+export default function TaakItem({ task, horses }: { task: Task; horses: Horse[] }) {
   const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
   const [toggling, startToggle] = useTransition()
   const [deleting, startDelete] = useTransition()
+  const [saving, startSave] = useTransition()
+
+  const dateInput = new Date(task.date).toISOString().slice(0, 10)
 
   function handleToggle() {
     setError(null)
@@ -29,6 +36,65 @@ export default function TaakItem({ task }: { task: Task }) {
       try { await deleteTask(task.id) }
       catch (err) { setError(err instanceof Error ? err.message : 'Fout') }
     })
+  }
+
+  function handleSave(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    const fd = new FormData(e.currentTarget)
+    startSave(async () => {
+      const result = await updateTask(task.id, fd)
+      if (result?.error) {
+        setError(result.error)
+      } else {
+        setEditing(false)
+      }
+    })
+  }
+
+  if (editing) {
+    return (
+      <div className="taak-item taak-item--editing">
+        <form onSubmit={handleSave} className="taak-edit-form">
+          {error && <div className="form-feedback form-feedback--error" style={{ marginBottom: 6 }}>{error}</div>}
+          <div className="taak-edit-form__row">
+            <input
+              name="title"
+              className="input"
+              defaultValue={task.title}
+              required
+              autoFocus
+              autoComplete="off"
+            />
+            <input
+              name="date"
+              type="date"
+              className="input taak-edit-form__date"
+              defaultValue={dateInput}
+              required
+            />
+            {horses.length > 0 && (
+              <select name="horseId" className="input select--taak">
+                <option value="">Geen paard</option>
+                {horses.map((h) => (
+                  <option key={h.id} value={h.id} selected={task.horse?.id === h.id}>
+                    {h.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div className="taak-edit-form__actions">
+            <button type="submit" className="btn-primary btn-primary--sm" disabled={saving}>
+              {saving ? '...' : 'Opslaan'}
+            </button>
+            <button type="button" className="btn-ghost btn-ghost--sm" onClick={() => { setEditing(false); setError(null) }}>
+              Annuleren
+            </button>
+          </div>
+        </form>
+      </div>
+    )
   }
 
   return (
@@ -49,6 +115,14 @@ export default function TaakItem({ task }: { task: Task }) {
         )}
         {error && <span className="taak-item__error">{error}</span>}
       </div>
+      <button
+        type="button"
+        className="btn-ghost btn-ghost--sm taak-item__edit"
+        onClick={() => setEditing(true)}
+        disabled={deleting}
+      >
+        Bewerken
+      </button>
       <button
         type="button"
         className="btn-danger btn-danger--sm taak-item__delete"

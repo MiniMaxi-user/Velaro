@@ -1622,7 +1622,27 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 .taak-item__title { font-size: var(--velaro-text-sm); font-weight: 500; color: var(--velaro-color-navy); }
 .taak-item__paard { font-size: 12px; color: var(--velaro-color-muted); margin-top: 2px; }
 .taak-item__error { font-size: 12px; color: var(--velaro-color-danger); margin-top: 2px; }
+.taak-item__edit { flex-shrink: 0; margin-right: 4px; }
 .taak-item__delete { flex-shrink: 0; }
+
+.taak-item--editing { display: block; padding: var(--velaro-space-3) var(--velaro-space-4); }
+
+.taak-edit-form__row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.taak-edit-form__row .input { margin: 0; }
+.taak-edit-form__row > .form-group { margin: 0; flex: 1; }
+.taak-edit-form__date { width: 140px; flex: none; }
+
+.taak-edit-form__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
 
 /* Taak form */
 .taak-form {

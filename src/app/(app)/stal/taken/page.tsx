@@ -102,7 +102,7 @@ export default async function TakenPage({
           </div>
           <div className="taken-lijst">
             {open.map((task) => (
-              <TaakItem key={task.id} task={task} />
+              <TaakItem key={task.id} task={task} horses={horses.map((h) => ({ id: h.id, name: h.name }))} />
             ))}
           </div>
         </div>
@@ -115,7 +115,7 @@ export default async function TakenPage({
           </div>
           <div className="taken-lijst">
             {done.map((task) => (
-              <TaakItem key={task.id} task={task} />
+              <TaakItem key={task.id} task={task} horses={horses.map((h) => ({ id: h.id, name: h.name }))} />
             ))}
           </div>
         </div>

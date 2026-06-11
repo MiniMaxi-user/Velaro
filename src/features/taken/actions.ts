@@ -74,3 +74,27 @@ export async function deleteTask(taskId: string) {
 
   revalidatePath('/stal/taken')
 }
+
+export async function updateTask(
+  taskId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const { stable } = await getStaffContext()
+
+  const task = await prisma.task.findUnique({ where: { id: taskId } })
+  if (!task || task.stableId !== stable.id) return { error: 'Taak niet gevonden' }
+
+  const title = (formData.get('title') as string)?.trim()
+  const dateStr = formData.get('date') as string
+  const horseId = (formData.get('horseId') as string) || null
+
+  if (!title) return { error: 'Omschrijving is verplicht' }
+  if (!dateStr) return { error: 'Datum is verplicht' }
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { title, date: new Date(dateStr), horseId: horseId || null },
+  })
+
+  revalidatePath('/stal/taken')
+}
