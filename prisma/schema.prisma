@@ -43,6 +43,23 @@ model Stable {
   address    String?
   postalCode String?
   city       String?
+
+  // Contactgegevens
+  phone   String?
+  email   String?
+  website String?
+
+  // Omschrijving / over de stal
+  description String?
+
+  // Openingstijden (vrij tekstveld, bv. "Ma-vr 07:00-21:00")
+  openingHours String?
+
+  // Factuuradres (indien afwijkend)
+  invoiceAddress    String?
+  invoicePostalCode String?
+  invoiceCity       String?
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -13,3 +13,7 @@ export async function getUserOwnedStables(userId: string) {
     orderBy: { createdAt: 'asc' },
   })
 }
+
+export async function getStableById(stableId: string) {
+  return prisma.stable.findUnique({ where: { id: stableId } })
+}

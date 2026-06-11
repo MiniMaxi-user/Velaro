@@ -68,3 +68,42 @@ export async function switchActiveStable(formData: FormData) {
 
   redirect('/stal')
 }
+
+export async function updateStable(stableId: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  // Alleen de OWNER mag de stalgegevens bewerken
+  const member = await prisma.stableMember.findUnique({
+    where: { stableId_userId: { stableId, userId: user.id } },
+  })
+  if (!member || member.role !== 'OWNER') throw new Error('Geen toegang')
+
+  const name = (formData.get('name') as string)?.trim()
+  if (!name) throw new Error('Stalnaam is verplicht')
+
+  const str = (key: string) => (formData.get(key) as string)?.trim() || null
+
+  await prisma.stable.update({
+    where: { id: stableId },
+    data: {
+      name,
+      address:           str('address'),
+      postalCode:        str('postalCode'),
+      city:              str('city'),
+      phone:             str('phone'),
+      email:             str('email'),
+      website:           str('website'),
+      description:       str('description'),
+      openingHours:      str('openingHours'),
+      invoiceAddress:    str('invoiceAddress'),
+      invoicePostalCode: str('invoicePostalCode'),
+      invoiceCity:       str('invoiceCity'),
+    },
+  })
+
+  revalidatePath('/stallen')
+  revalidatePath(`/stallen/${stableId}/bewerken`)
+  redirect('/stallen')
+}
