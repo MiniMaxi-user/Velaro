@@ -6,6 +6,7 @@ import { getHorsesForStable } from '@/features/paarden/queries'
 import { getTasksForDate } from '@/features/taken/queries'
 import TaakForm from '@/features/taken/TaakForm'
 import TaakItem from '@/features/taken/TaakItem'
+import TaakDatumKiezer from '@/features/taken/TaakDatumKiezer'
 
 function formatDate(d: Date) {
   return d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -74,6 +75,7 @@ export default async function TakenPage({
         <div className="taken-nav__datum">
           <span className="taken-nav__dag">{formatDate(date)}</span>
           {isToday && <span className="leden-badge leden-badge--owner">vandaag</span>}
+          <TaakDatumKiezer value={toDateParam(date)} />
         </div>
         <Link href={`/stal/taken?datum=${toDateParam(next)}`} className="btn-ghost btn-ghost--sm">
           {next.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} →

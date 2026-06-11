@@ -1624,6 +1624,15 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   color: var(--velaro-color-navy);
 }
 
+.taken-datumkiezer {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  width: auto;
+  color: var(--velaro-color-muted);
+  border-color: var(--velaro-color-border);
+  margin-top: 4px;
+}
+
 .taken-sectie {
   background: var(--velaro-color-surf-1);
   border: 1px solid var(--velaro-color-border);
