@@ -6,13 +6,6 @@ import { usePathname } from 'next/navigation'
 import { useState, useRef } from 'react'
 import { switchActiveStable } from '@/features/stallen/actions'
 
-const STAL_NAV = [
-  { href: '/stal',       label: 'Dashboard', icon: 'dashboard', exact: true },
-  { href: '/paarden',    label: 'Paarden',   icon: 'horse',     exact: false },
-  { href: '/stal/taken', label: 'Taken',     icon: 'check',     exact: false },
-  { href: '/stal/leden', label: 'Team',      icon: 'team',      exact: false },
-]
-
 const EIGENAAR_NAV = [
   { href: '/eigenaar', label: 'Dashboard',    icon: 'dashboard', exact: true },
   { href: '/paarden',  label: 'Mijn paarden', icon: 'horse',     exact: false },
@@ -89,10 +82,27 @@ export default function SidebarClient({
   const [collapsed, setCollapsed] = useState(false)
   const switchFormRef = useRef<HTMLFormElement>(null)
 
-  const mainLinks = isPlatformAdmin ? [] : (isStableMember ? STAL_NAV : EIGENAAR_NAV)
-  const extraLinks = !isPlatformAdmin && canManageStables
-    ? [{ href: '/stallen', label: 'Mijn stallen', icon: 'stallen', exact: false }]
-    : []
+  // Bouw de navigatielijst op in de vereiste volgorde per rol:
+  // Dashboard → Mijn stallen → Paarden → Team → Taken
+  // Items die niet van toepassing zijn op de rol worden weggelaten.
+  function buildMainLinks() {
+    if (isPlatformAdmin) return []
+    if (!isStableMember) return EIGENAAR_NAV
+
+    const links = [
+      { href: '/stal',       label: 'Dashboard',    icon: 'dashboard', exact: true },
+      ...(canManageStables
+        ? [{ href: '/stallen', label: 'Mijn stallen', icon: 'stallen', exact: false }]
+        : []),
+      { href: '/paarden',    label: 'Paarden',      icon: 'horse',     exact: false },
+      { href: '/stal/leden', label: 'Team',          icon: 'team',      exact: false },
+      { href: '/stal/taken', label: 'Taken',         icon: 'check',     exact: false },
+    ]
+    return links
+  }
+
+  const mainLinks = buildMainLinks()
+  const extraLinks: typeof mainLinks = []
 
   const initials = userEmail
     ? userEmail.slice(0, 2).toUpperCase()
