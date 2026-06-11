@@ -63,10 +63,11 @@ export default async function PaardDetailPage({ params }: Props) {
         </div>
         <div className="page-header-actions">
           {canEdit && (
-            <Link href={`/paarden/${id}/bewerken`} className="btn-icon" title="Bewerken">
+            <Link href={`/paarden/${id}/bewerken`} className="btn-secondary">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
               </svg>
+              Bewerken
             </Link>
           )}
           {canDelete && <DeletePaardButton horseId={id} />}
