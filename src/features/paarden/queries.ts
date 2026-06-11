@@ -30,6 +30,20 @@ export async function getHorse(id: string) {
           user: { select: { id: true, name: true, email: true } },
         },
       },
+      stable: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          postalCode: true,
+          city: true,
+          phone: true,
+          email: true,
+          website: true,
+          description: true,
+          openingHours: true,
+        },
+      },
     },
   })
 }

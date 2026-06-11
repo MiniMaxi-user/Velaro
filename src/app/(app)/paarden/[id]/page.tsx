@@ -10,6 +10,7 @@ import { getVaccinaties, getOntwormingen, getDierenartsBezzoeken } from '@/featu
 import GezondheidTabs from '@/features/gezondheid/GezondheidTabs'
 import { getNotesForHorse } from '@/features/mededelingen/queries'
 import MededelingenSectie from '@/features/mededelingen/MededelingenSectie'
+import StalGegevensPanel from '@/features/paarden/StalGegevensPanel'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -172,6 +173,9 @@ export default async function PaardDetailPage({ params }: Props) {
 
         {/* Side panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Stalgegevens (voor paardeneigenaren) */}
+          <StalGegevensPanel stable={horse.stable} />
 
           {/* Welzijn */}
           <div className="panel">
