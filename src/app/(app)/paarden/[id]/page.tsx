@@ -7,10 +7,9 @@ import { GESLACHT_LABELS, berekenLeeftijd, formatDatum } from '@/features/paarde
 import DeletePaardButton from '@/features/paarden/DeletePaardButton'
 import EigenaarBeheer from '@/features/paarden/EigenaarBeheer'
 import { getVaccinaties, getOntwormingen, getDierenartsBezzoeken } from '@/features/gezondheid/queries'
-import DeleteGezondheidButton from '@/features/gezondheid/DeleteGezondheidButton'
+import GezondheidTabs from '@/features/gezondheid/GezondheidTabs'
 import { getNotesForHorse } from '@/features/mededelingen/queries'
 import MededelingenSectie from '@/features/mededelingen/MededelingenSectie'
-import type { Vaccination, Deworming, VetVisit } from '@prisma/client'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -144,133 +143,14 @@ export default async function PaardDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Vaccinaties */}
-          <div className="panel">
-            <div className="panel-header">
-              <span className="panel-title">Vaccinaties</span>
-              {canEdit && (
-                <Link href={`/paarden/${id}/vaccinaties/nieuw`} className="btn-ghost btn-ghost--sm">
-                  + Toevoegen
-                </Link>
-              )}
-            </div>
-            {vaccinaties.length === 0 ? (
-              <div className="gezondheid-leeg">Nog geen vaccinaties geregistreerd.</div>
-            ) : (
-              <table className="gezondheid-tabel">
-                <thead>
-                  <tr>
-                    <th>Datum</th><th>Type vaccin</th><th>Volgende datum</th><th>Notities</th>
-                    {canEdit && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {vaccinaties.map((v: Vaccination) => (
-                    <tr key={v.id}>
-                      <td>{formatDatum(new Date(v.date))}</td>
-                      <td>{v.type}</td>
-                      <td>
-                        {v.nextDate
-                          ? <span className="gezondheid-next">{formatDatum(new Date(v.nextDate))}</span>
-                          : <span className="gezondheid-tabel__muted">—</span>}
-                      </td>
-                      <td className="gezondheid-tabel__muted">{v.notes ?? '—'}</td>
-                      {canEdit && (
-                        <td className="gezondheid-tabel__acties">
-                          <Link href={`/paarden/${id}/vaccinaties/${v.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
-                          <DeleteGezondheidButton id={v.id} horseId={id} type="vaccinatie" />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Ontworming */}
-          <div className="panel">
-            <div className="panel-header">
-              <span className="panel-title">Ontworming</span>
-              {canEdit && (
-                <Link href={`/paarden/${id}/ontworming/nieuw`} className="btn-ghost btn-ghost--sm">
-                  + Toevoegen
-                </Link>
-              )}
-            </div>
-            {ontwormingen.length === 0 ? (
-              <div className="gezondheid-leeg">Nog geen ontworming geregistreerd.</div>
-            ) : (
-              <table className="gezondheid-tabel">
-                <thead>
-                  <tr>
-                    <th>Datum</th><th>Product</th><th>Volgende datum</th><th>Notities</th>
-                    {canEdit && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ontwormingen.map((o: Deworming) => (
-                    <tr key={o.id}>
-                      <td>{formatDatum(new Date(o.date))}</td>
-                      <td>{o.product}</td>
-                      <td>
-                        {o.nextDate
-                          ? <span className="gezondheid-next">{formatDatum(new Date(o.nextDate))}</span>
-                          : <span className="gezondheid-tabel__muted">—</span>}
-                      </td>
-                      <td className="gezondheid-tabel__muted">{o.notes ?? '—'}</td>
-                      {canEdit && (
-                        <td className="gezondheid-tabel__acties">
-                          <Link href={`/paarden/${id}/ontworming/${o.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
-                          <DeleteGezondheidButton id={o.id} horseId={id} type="ontworming" />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Dierenartsenbezoeken */}
-          <div className="panel">
-            <div className="panel-header">
-              <span className="panel-title">Dierenartsenbezoeken</span>
-              {canEdit && (
-                <Link href={`/paarden/${id}/dierenarts/nieuw`} className="btn-ghost btn-ghost--sm">
-                  + Toevoegen
-                </Link>
-              )}
-            </div>
-            {bezzoeken.length === 0 ? (
-              <div className="gezondheid-leeg">Nog geen dierenartsenbezoeken geregistreerd.</div>
-            ) : (
-              <table className="gezondheid-tabel">
-                <thead>
-                  <tr>
-                    <th>Datum</th><th>Dierenarts</th><th>Reden</th><th>Notities</th>
-                    {canEdit && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {bezzoeken.map((b: VetVisit) => (
-                    <tr key={b.id}>
-                      <td>{formatDatum(new Date(b.date))}</td>
-                      <td className="gezondheid-tabel__muted">{b.vet ?? '—'}</td>
-                      <td>{b.reason}</td>
-                      <td className="gezondheid-tabel__muted">{b.notes ?? '—'}</td>
-                      {canEdit && (
-                        <td className="gezondheid-tabel__acties">
-                          <Link href={`/paarden/${id}/dierenarts/${b.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
-                          <DeleteGezondheidButton id={b.id} horseId={id} type="dierenarts" />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          {/* Gezondheid (Vaccinaties / Ontworming / Dierenarts) */}
+          <GezondheidTabs
+            horseId={id}
+            vaccinaties={vaccinaties}
+            ontwormingen={ontwormingen}
+            bezzoeken={bezzoeken}
+            canEdit={canEdit}
+          />
 
           {/* Mededelingen */}
           <div className="panel">
