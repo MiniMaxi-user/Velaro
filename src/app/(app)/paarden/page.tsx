@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable, getHorsesForStable, getHorsesForOwner } from '@/features/paarden/queries'
 import { berekenLeeftijd, GESLACHT_LABELS } from '@/features/paarden/paardHelpers'
 import type { HorseSex } from '@prisma/client'
@@ -11,8 +11,7 @@ function leeftijdLabel(dateOfBirth: Date | null): string {
 }
 
 export default async function PaardenPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const stable = await getUserStable(user.id)

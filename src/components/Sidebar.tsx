@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser, getDbUser } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { getActiveStableId } from '@/lib/active-stable'
 import SidebarClient from './SidebarClient'
@@ -9,16 +9,12 @@ const ROL_LABELS: Record<string, string> = {
 }
 
 export default async function Sidebar() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   if (!user) return null
 
   const [dbUser, memberships, activeStableId] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: { name: true, isPlatformAdmin: true, maxStables: true },
-    }),
+    getDbUser(user.id),
     prisma.stableMember.findMany({
       where: { userId: user.id },
       include: { stable: { select: { id: true, name: true } } },

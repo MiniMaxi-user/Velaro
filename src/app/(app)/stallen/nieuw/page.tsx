@@ -1,12 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { canCreateStable } from '@/lib/auth/authorization'
 import StalNieuwForm from '@/features/stallen/StalNieuwForm'
 
 export default async function NieuweStalPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const canCreate = await canCreateStable(user.id)

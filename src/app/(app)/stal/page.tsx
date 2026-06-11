@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable, getHorsesForStable } from '@/features/paarden/queries'
 import { getTaskCountsForDate } from '@/features/taken/queries'
 import { getStableRole, canCreateStable } from '@/lib/auth/authorization'
@@ -13,8 +13,7 @@ function toDateParam(d: Date) {
 }
 
 export default async function StalPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const [stable, canCreate] = await Promise.all([

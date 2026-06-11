@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable } from '@/features/paarden/queries'
 import { getHorsesForStable } from '@/features/paarden/queries'
 import { getTasksForDate } from '@/features/taken/queries'
@@ -20,8 +20,7 @@ export default async function TakenPage({
 }: {
   searchParams: Promise<{ datum?: string }>
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const stable = await getUserStable(user.id)
