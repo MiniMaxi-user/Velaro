@@ -33,6 +33,27 @@ export async function createNote(horseId: string, formData: FormData) {
   revalidatePath(`/paarden/${horseId}`)
 }
 
+export async function updateNote(id: string, horseId: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const note = await prisma.stableNote.findUnique({ where: { id } })
+  if (!note || note.horseId !== horseId) throw new Error('Mededeling niet gevonden')
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) throw new Error('Paard niet gevonden')
+
+  // Alleen de auteur mag zijn eigen mededeling bewerken (geen OWNER-override)
+  if (note.authorId !== user.id) throw new Error('Geen toegang')
+
+  const message = (formData.get('message') as string)?.trim()
+  if (!message) return { error: 'Bericht is verplicht' }
+
+  await prisma.stableNote.update({ where: { id }, data: { message } })
+  revalidatePath(`/paarden/${horseId}`)
+}
+
 export async function deleteNote(id: string, horseId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

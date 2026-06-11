@@ -846,6 +846,7 @@ a { color: inherit; text-decoration: none; }
 .btn-lg  { padding: 12px 28px; font-size: var(--velaro-text-md); }
 .btn-ghost--sm  { padding: 5px 12px; font-size: 12px; }
 .btn-danger--sm { padding: 5px 12px; font-size: 12px; }
+.btn-primary--sm { padding: 5px 12px; font-size: 12px; }
 .btn-primary--full { display: block; width: 100%; justify-content: center; }
 
 /* BADGES */
