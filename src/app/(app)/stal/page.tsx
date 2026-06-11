@@ -17,12 +17,12 @@ export default async function StalPage() {
   const stable = await getUserStable(user.id)
   if (!stable) {
     return (
-      <main className="page-container">
-        <div className="empty-state">
-          <div className="empty-state__title">Geen stal gevonden</div>
-          <p>Je bent nog niet aan een stal gekoppeld.</p>
-        </div>
-      </main>
+      <div className="empty-state">
+        <div className="empty-state__title">Geen stal gevonden</div>
+        <p style={{ color: 'var(--velaro-color-muted)', marginTop: 8 }}>
+          Je bent nog niet aan een stal gekoppeld.
+        </p>
+      </div>
     )
   }
 
@@ -37,40 +37,83 @@ export default async function StalPage() {
   const openTaken = takenVandaag.total - takenVandaag.completed
 
   return (
-    <main className="page-container">
+    <>
+      {/* Page header */}
       <div className="page-header">
-        <div>
-          <div className="label">Dashboard</div>
-          <h1 className="page-title">
-            Mijn <em>Stal</em>
-          </h1>
+        <div className="page-header-left">
+          <div className="breadcrumb">
+            <span className="breadcrumb-current">Dashboard</span>
+          </div>
+          <h1 className="page-title"><em>{stable.name}</em></h1>
+        </div>
+        <div className="page-header-actions">
+          <Link href="/paarden/nieuw" className="btn-primary">+ Nieuw paard</Link>
         </div>
       </div>
 
-      {/* Stat-kaarten */}
-      <div className="stal-stats">
-        <div className="stal-stat-card">
-          <div className="stal-stat-card__waarde">{horses.length}</div>
-          <div className="stal-stat-card__label">Paarden</div>
+      {/* KPI cards */}
+      <div className="kpi-row">
+        <div className="kpi-card">
+          <div className="kpi-card-icon">🐴</div>
+          <div className="kpi-card-body">
+            <div className="kpi-card-value">{horses.length}</div>
+            <div className="kpi-card-label">Paarden</div>
+          </div>
         </div>
-        <div className="stal-stat-card">
-          <div className="stal-stat-card__waarde">{openTaken}</div>
-          <div className="stal-stat-card__label">Open taken vandaag</div>
+        <div className="kpi-card">
+          <div className="kpi-card-icon amber">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="4" width="14" height="12" rx="2" stroke="var(--velaro-color-warning)" strokeWidth="1.4"/>
+              <path d="M5 2v4M13 2v4M2 8h14" stroke="var(--velaro-color-warning)" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="kpi-card-body">
+            <div className="kpi-card-value">{openTaken}</div>
+            <div className="kpi-card-label">Open taken vandaag</div>
+          </div>
         </div>
-        {takenVandaag.total > 0 && (
-          <div className="stal-stat-card">
-            <div className="stal-stat-card__waarde">
-              {takenVandaag.completed}/{takenVandaag.total}
+        <div className="kpi-card">
+          <div className="kpi-card-icon success">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M4 9l4 4 6-7" stroke="var(--velaro-color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="kpi-card-body">
+            <div className="kpi-card-value">
+              {takenVandaag.total > 0
+                ? `${takenVandaag.completed}/${takenVandaag.total}`
+                : '—'}
             </div>
-            <div className="stal-stat-card__label">Taken afgerond</div>
+            <div className="kpi-card-label">Taken afgerond</div>
+          </div>
+        </div>
+        {isOwner && (
+          <div className="kpi-card">
+            <div className="kpi-card-icon navy">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <circle cx="7" cy="6" r="3" stroke="var(--velaro-color-navy)" strokeWidth="1.4"/>
+                <path d="M2 16c0-3 2-5 5-5" stroke="var(--velaro-color-navy)" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M12 11v6M9 14h6" stroke="var(--velaro-color-navy)" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="kpi-card-body">
+              <div className="kpi-card-value">
+                <Link href="/stal/leden" style={{ color: 'inherit', textDecoration: 'none' }}>Team</Link>
+              </div>
+              <div className="kpi-card-label">Leden beheren</div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Snelkoppelingen */}
-      <div className="stal-acties">
+      {/* Quick actions */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px,1fr))', gap: 14 }}>
         <Link href={`/stal/taken?datum=${toDateParam(today)}`} className="stal-actie-kaart">
-          <div className="stal-actie-kaart__icon">✓</div>
+          <div className="stal-actie-kaart__icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10l5 5 7-8" stroke="var(--velaro-color-gold-2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
           <div className="stal-actie-kaart__tekst">
             <div className="stal-actie-kaart__titel">Taken vandaag</div>
             <div className="stal-actie-kaart__sub">
@@ -87,36 +130,64 @@ export default async function StalPage() {
         </Link>
         {isOwner && (
           <Link href="/stal/leden" className="stal-actie-kaart">
-            <div className="stal-actie-kaart__icon">👥</div>
+            <div className="stal-actie-kaart__icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="8" cy="7" r="3" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4"/>
+                <path d="M3 18c0-3 2-5 5-5h4" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M15 12v6M12 15h6" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+            </div>
             <div className="stal-actie-kaart__tekst">
-              <div className="stal-actie-kaart__titel">Leden</div>
+              <div className="stal-actie-kaart__titel">Team</div>
               <div className="stal-actie-kaart__sub">Beheer medewerkers</div>
             </div>
           </Link>
         )}
       </div>
 
-      {/* Paardenoverzicht */}
+      {/* Stalbewoners */}
       {horses.length > 0 && (
-        <div style={{ marginTop: 'var(--velaro-space-10)' }}>
-          <div className="label">Stalbewoners</div>
-          <div className="stal-paarden-lijst">
-            {horses.map((horse) => (
-              <Link key={horse.id} href={`/paarden/${horse.id}`} className="stal-paard-rij">
-                <div className="stal-paard-rij__naam">{horse.name}</div>
-                <div className="stal-paard-rij__meta">
-                  {horse.boxNumber && (
-                    <span className="paard-card__badge">Box {horse.boxNumber}</span>
-                  )}
-                  {horse.breed && (
-                    <span className="stal-paard-rij__ras">{horse.breed}</span>
-                  )}
-                </div>
-              </Link>
-            ))}
+        <div>
+          <div style={{ marginBottom: 10 }}>
+            <span className="label">Stalbewoners</span>
+          </div>
+          <div className="data-grid-wrapper">
+            <table className="data-grid">
+              <thead>
+                <tr>
+                  <th>Naam</th>
+                  <th>Ras</th>
+                  <th>Box</th>
+                  <th>Discipline</th>
+                </tr>
+              </thead>
+              <tbody>
+                {horses.map((horse) => (
+                  <tr key={horse.id}>
+                    <td>
+                      <Link href={`/paarden/${horse.id}`} className="cell-entity" style={{ textDecoration: 'none' }}>
+                        <div className="cell-avatar">🐴</div>
+                        <div className="cell-entity-name">{horse.name}</div>
+                      </Link>
+                    </td>
+                    <td style={{ color: 'var(--velaro-color-muted)' }}>{horse.breed ?? '—'}</td>
+                    <td>
+                      {horse.boxNumber
+                        ? <span className="badge badge-neutral">Box {horse.boxNumber}</span>
+                        : <span style={{ color: 'var(--velaro-color-muted-2)' }}>—</span>}
+                    </td>
+                    <td>
+                      {horse.discipline
+                        ? <span className="badge badge-gold">{horse.discipline}</span>
+                        : <span style={{ color: 'var(--velaro-color-muted-2)' }}>—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
-    </main>
+    </>
   )
 }

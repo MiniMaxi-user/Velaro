@@ -35,12 +35,11 @@ export default function SidebarClient({ isStableMember, userEmail, userRole }: P
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">V</div>
         <Image
           src="/velaro_logo_white.png"
           alt="Velaro"
-          height={22}
-          width={110}
+          height={24}
+          width={120}
           priority
           className="sidebar-logo-img"
         />
