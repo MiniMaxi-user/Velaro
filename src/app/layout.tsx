@@ -4,6 +4,10 @@ import '@/styles/globals.css'
 export const metadata: Metadata = {
   title: 'Velaro',
   description: 'Paardenprofiel platform voor pensionstallen',
+  icons: {
+    icon: '/logo_icon.png',
+    apple: '/logo_icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
