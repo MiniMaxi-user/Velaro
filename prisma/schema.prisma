@@ -20,11 +20,13 @@ datasource db {
 // ── Gebruikers ──────────────────────────────────────────────────────────────
 
 model User {
-  id        String   @id @db.Uuid // == Supabase auth user id
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @db.Uuid // == Supabase auth user id
+  email           String   @unique
+  name            String?
+  isPlatformAdmin Boolean  @default(false)
+  maxStables      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Een gebruiker kan staf/eigenaar van stallen zijn én eigenaar van paarden.
   stableMemberships StableMember[]

@@ -1,6 +1,28 @@
 import { prisma } from '@/lib/prisma'
 import type { StableRole } from '@prisma/client'
 
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isPlatformAdmin: true },
+  })
+  return user?.isPlatformAdmin ?? false
+}
+
+export async function canCreateStable(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isPlatformAdmin: true, maxStables: true },
+  })
+  if (!user) return false
+  if (user.isPlatformAdmin) return true
+
+  const currentCount = await prisma.stableMember.count({
+    where: { userId, role: 'OWNER' },
+  })
+  return currentCount < user.maxStables
+}
+
 export async function getStableRole(
   userId: string,
   stableId: string

@@ -3,7 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { switchActiveStable } from '@/features/stallen/actions'
 
 const STAL_NAV = [
   { href: '/stal',       label: 'Dashboard', icon: 'dashboard', exact: true },
@@ -14,6 +15,10 @@ const STAL_NAV = [
 
 const EIGENAAR_NAV = [
   { href: '/paarden', label: 'Mijn paarden', icon: 'horse', exact: false },
+]
+
+const ADMIN_NAV = [
+  { href: '/admin/eigenaren', label: 'Eigenaren', icon: 'team', exact: false },
 ]
 
 function NavIcon({ name }: { name: string }) {
@@ -44,70 +49,129 @@ function NavIcon({ name }: { name: string }) {
       <path d="M10 14c0-2 1-3.5 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
     </svg>
   )
+  if (name === 'stallen') return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M1 8L8 2l7 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3 8v5h10V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+  if (name === 'admin') return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+    </svg>
+  )
   return null
 }
 
 interface Props {
   isStableMember: boolean
+  isPlatformAdmin: boolean
+  canManageStables: boolean
   userEmail: string | undefined
   userRole?: string
+  stables: { id: string; name: string }[]
+  activeStableId: string | null
 }
 
-export default function SidebarClient({ isStableMember, userEmail, userRole }: Props) {
+export default function SidebarClient({
+  isStableMember,
+  isPlatformAdmin,
+  canManageStables,
+  userEmail,
+  userRole,
+  stables,
+  activeStableId,
+}: Props) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const links = isStableMember ? STAL_NAV : EIGENAAR_NAV
+  const switchFormRef = useRef<HTMLFormElement>(null)
+
+  const mainLinks = isStableMember ? STAL_NAV : EIGENAAR_NAV
+  const extraLinks = canManageStables
+    ? [{ href: '/stallen', label: 'Mijn stallen', icon: 'stallen', exact: false }]
+    : []
 
   const initials = userEmail
     ? userEmail.slice(0, 2).toUpperCase()
     : 'VL'
+
+  function isActive(href: string, exact: boolean) {
+    return exact ? pathname === href : pathname.startsWith(href)
+  }
 
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       {/* Logo */}
       <div className="sidebar-logo">
         {collapsed ? (
-          <Image
-            src="/logo_icon.png"
-            alt="Velaro"
-            width={32}
-            height={32}
-            priority
-            style={{ objectFit: 'contain' }}
-          />
+          <Image src="/logo_icon.png" alt="Velaro" width={32} height={32} priority style={{ objectFit: 'contain' }} />
         ) : (
-          <Image
-            src="/velaro_logo_white.png"
-            alt="Velaro"
-            height={24}
-            width={120}
-            priority
-            className="sidebar-logo-img"
-          />
+          <Image src="/velaro_logo_white.png" alt="Velaro" height={24} width={120} priority className="sidebar-logo-img" />
         )}
       </div>
+
+      {/* Stable switcher */}
+      {stables.length > 1 && !collapsed && (
+        <div style={{ padding: '0 var(--velaro-space-4) var(--velaro-space-3)' }}>
+          <form ref={switchFormRef} action={switchActiveStable}>
+            <select
+              name="stableId"
+              defaultValue={activeStableId ?? ''}
+              onChange={() => switchFormRef.current?.requestSubmit()}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                borderRadius: 6,
+                border: '1px solid rgba(255,255,255,0.15)',
+                background: 'rgba(255,255,255,0.08)',
+                color: 'inherit',
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              {stables.map((s) => (
+                <option key={s.id} value={s.id} style={{ background: 'var(--velaro-color-navy)', color: '#fff' }}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </form>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="sidebar-nav">
         <div className="nav-section">
-          {!collapsed && (
-            <div className="nav-section-label">Navigatie</div>
-          )}
-          {links.map(({ href, label, icon, exact }) => {
-            const isActive = exact ? pathname === href : pathname.startsWith(href)
-            return (
+          {!collapsed && <div className="nav-section-label">Navigatie</div>}
+          {[...mainLinks, ...extraLinks].map(({ href, label, icon, exact }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`nav-item${isActive(href, exact) ? ' active' : ''}`}
+              title={collapsed ? label : undefined}
+            >
+              <span className="nav-icon"><NavIcon name={icon} /></span>
+              <span className="nav-label">{label}</span>
+            </Link>
+          ))}
+        </div>
+
+        {isPlatformAdmin && (
+          <div className="nav-section" style={{ marginTop: 'var(--velaro-space-4)' }}>
+            {!collapsed && <div className="nav-section-label">Beheer</div>}
+            {ADMIN_NAV.map(({ href, label, icon, exact }) => (
               <Link
                 key={href}
                 href={href}
-                className={`nav-item${isActive ? ' active' : ''}`}
+                className={`nav-item${isActive(href, exact) ? ' active' : ''}`}
                 title={collapsed ? label : undefined}
               >
                 <span className="nav-icon"><NavIcon name={icon} /></span>
                 <span className="nav-label">{label}</span>
               </Link>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Footer */}

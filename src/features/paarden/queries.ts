@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { getActiveStable } from '@/lib/active-stable'
 
 export async function getHorsesForOwner(userId: string) {
   const ownerships = await prisma.horseOwner.findMany({
@@ -10,12 +11,7 @@ export async function getHorsesForOwner(userId: string) {
 }
 
 export async function getUserStable(userId: string) {
-  const member = await prisma.stableMember.findFirst({
-    where: { userId },
-    include: { stable: true },
-    orderBy: { createdAt: 'asc' },
-  })
-  return member?.stable ?? null
+  return getActiveStable(userId)
 }
 
 export async function getHorsesForStable(stableId: string) {

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getUserStable, getHorsesForStable } from '@/features/paarden/queries'
 import { getTaskCountsForDate } from '@/features/taken/queries'
-import { getStableRole } from '@/lib/auth/authorization'
+import { getStableRole, canCreateStable } from '@/lib/auth/authorization'
 
 function toDateParam(d: Date) {
   return d.toISOString().slice(0, 10)
@@ -14,14 +14,26 @@ export default async function StalPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const stable = await getUserStable(user.id)
+  const [stable, canCreate] = await Promise.all([
+    getUserStable(user.id),
+    canCreateStable(user.id),
+  ])
+
   if (!stable) {
     return (
       <div className="empty-state">
-        <div className="empty-state__title">Geen stal gevonden</div>
+        <div className="empty-state__title">Geen actieve stal</div>
         <p style={{ color: 'var(--velaro-color-muted)', marginTop: 8 }}>
           Je bent nog niet aan een stal gekoppeld.
         </p>
+        {canCreate && (
+          <div style={{ marginTop: 16 }}>
+            <Link href="/stallen/nieuw" className="btn-primary">Eerste stal aanmaken</Link>
+          </div>
+        )}
+        <div style={{ marginTop: 12 }}>
+          <Link href="/stallen" className="btn-ghost">Mijn stallen</Link>
+        </div>
       </div>
     )
   }

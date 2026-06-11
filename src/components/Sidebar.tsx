@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { isAnyStableMember } from '@/lib/auth/authorization'
 import { prisma } from '@/lib/prisma'
+import { getActiveStableId } from '@/lib/active-stable'
 import SidebarClient from './SidebarClient'
 
 const ROL_LABELS: Record<string, string> = {
@@ -14,24 +14,41 @@ export default async function Sidebar() {
 
   if (!user) return null
 
-  const stableMember = await isAnyStableMember(user.id)
-
-  let rolLabel = 'Paardeneigenaar'
-  if (stableMember) {
-    const membership = await prisma.stableMember.findFirst({
+  const [dbUser, memberships, activeStableId] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { name: true, isPlatformAdmin: true, maxStables: true },
+    }),
+    prisma.stableMember.findMany({
       where: { userId: user.id },
-      select: { role: true },
-    })
-    if (membership) {
-      rolLabel = ROL_LABELS[membership.role] ?? membership.role
-    }
-  }
+      include: { stable: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'asc' },
+    }),
+    getActiveStableId(user.id),
+  ])
+
+  const isStableMember = memberships.length > 0
+  const isPlatformAdmin = dbUser?.isPlatformAdmin ?? false
+  const canManageStables = isPlatformAdmin || (dbUser?.maxStables ?? 0) > 0
+
+  const activeMembership = memberships.find((m) => m.stableId === activeStableId)
+  let rolLabel = isPlatformAdmin
+    ? 'Platform Admin'
+    : activeMembership
+    ? (ROL_LABELS[activeMembership.role] ?? activeMembership.role)
+    : 'Paardeneigenaar'
+
+  const stables = memberships.map((m) => m.stable)
 
   return (
     <SidebarClient
-      isStableMember={stableMember}
+      isStableMember={isStableMember}
+      isPlatformAdmin={isPlatformAdmin}
+      canManageStables={canManageStables}
       userEmail={user.email}
       userRole={rolLabel}
+      stables={stables}
+      activeStableId={activeStableId}
     />
   )
 }
