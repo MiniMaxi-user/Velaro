@@ -1,11 +1,15 @@
 'use client'
 
+import Link from 'next/link'
 import { useRef, useState, useTransition } from 'react'
 import { addHorseOwner, removeHorseOwner } from './actions'
 
 type Owner = { id: string; userId: string; user: { name: string | null; email: string } }
 
-export default function EigenaarBeheer({ horseId, owners }: { horseId: string; owners: Owner[] }) {
+export default function EigenaarBeheer({ horseId, owners }: {
+  horseId: string
+  owners: Owner[]
+}) {
   const [addError, setAddError] = useState<string | null>(null)
   const [addPending, startAdd] = useTransition()
   const [removeError, setRemoveError] = useState<string | null>(null)
@@ -93,6 +97,12 @@ export default function EigenaarBeheer({ horseId, owners }: { horseId: string; o
             {addPending ? '...' : 'Koppelen'}
           </button>
         </form>
+        <div style={{ marginTop: 'var(--velaro-space-3)', fontSize: 'var(--velaro-text-xs)', color: 'var(--velaro-color-muted)' }}>
+          Nog geen account?{' '}
+          <Link href={`/paarden/${horseId}/eigenaren/nieuw`} className="form-link">
+            Maak een account aan
+          </Link>
+        </div>
       </div>
     </div>
   )

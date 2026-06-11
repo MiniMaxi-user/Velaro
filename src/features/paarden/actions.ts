@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { getStableRole } from '@/lib/auth/authorization'
 import type { HorseSex } from '@prisma/client'
 import { getUserStable } from './queries'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 async function getCurrentUser() {
   const supabase = await createClient()
@@ -132,6 +133,59 @@ export async function removeHorseOwner(
   await prisma.horseOwner.delete({ where: { id: ownershipId } })
 
   revalidatePath(`/paarden/${horseId}`)
+}
+
+export async function createAndLinkEigenaar(
+  horseId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) return { error: 'Paard niet gevonden' }
+
+  const role = await getStableRole(user.id, horse.stableId)
+  if (!role) return { error: 'Geen toegang' }
+
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const name = (formData.get('name') as string)?.trim() || null
+  const password = formData.get('password') as string
+
+  if (!email) return { error: 'E-mailadres is verplicht' }
+  if (!password || password.length < 8) return { error: 'Wachtwoord moet minimaal 8 tekens bevatten' }
+
+  const existing = await prisma.user.findUnique({ where: { email } })
+  if (existing) {
+    const alreadyLinked = await prisma.horseOwner.findUnique({
+      where: { horseId_userId: { horseId, userId: existing.id } },
+    })
+    if (alreadyLinked) return { error: 'Deze eigenaar is al gekoppeld aan dit paard' }
+    await prisma.horseOwner.create({ data: { horseId, userId: existing.id } })
+    revalidatePath(`/paarden/${horseId}`)
+    redirect(`/paarden/${horseId}`)
+  }
+
+  const adminClient = createAdminClient()
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+
+  if (authError) return { error: `Fout bij aanmaken account: ${authError.message}` }
+
+  try {
+    await prisma.user.create({
+      data: { id: authData.user.id, email, name, maxStables: 0, isPlatformAdmin: false },
+    })
+    await prisma.horseOwner.create({ data: { horseId, userId: authData.user.id } })
+  } catch {
+    await adminClient.auth.admin.deleteUser(authData.user.id)
+    return { error: 'Fout bij opslaan in database. Account is teruggedraaid.' }
+  }
+
+  revalidatePath(`/paarden/${horseId}`)
+  redirect(`/paarden/${horseId}`)
 }
 
 export async function deleteHorse(id: string) {
