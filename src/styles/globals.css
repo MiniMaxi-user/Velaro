@@ -251,6 +251,16 @@ a { color: inherit; text-decoration: none; }
 
 .sidebar.collapsed .sidebar-logo-text { opacity: 0; pointer-events: none; }
 
+.sidebar-logo-img {
+  height: 22px;
+  width: auto;
+  opacity: 1;
+  transition: opacity 0.2s;
+  object-fit: contain;
+}
+
+.sidebar.collapsed .sidebar-logo-img { opacity: 0; pointer-events: none; }
+
 .sidebar-nav {
   flex: 1;
   padding: 10px 8px;

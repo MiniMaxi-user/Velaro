@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -35,7 +36,14 @@ export default function SidebarClient({ isStableMember, userEmail, userRole }: P
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">V</div>
-        <span className="sidebar-logo-text">VELARO</span>
+        <Image
+          src="/velaro_logo_white.png"
+          alt="Velaro"
+          height={22}
+          width={110}
+          priority
+          className="sidebar-logo-img"
+        />
       </div>
 
       <nav className="sidebar-nav">
