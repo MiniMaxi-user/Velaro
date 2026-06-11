@@ -8,6 +8,8 @@ import DeletePaardButton from '@/features/paarden/DeletePaardButton'
 import EigenaarBeheer from '@/features/paarden/EigenaarBeheer'
 import { getVaccinaties, getOntwormingen, getDierenartsBezzoeken } from '@/features/gezondheid/queries'
 import DeleteGezondheidButton from '@/features/gezondheid/DeleteGezondheidButton'
+import { getNotesForHorse } from '@/features/mededelingen/queries'
+import MededelingenSectie from '@/features/mededelingen/MededelingenSectie'
 import type { Vaccination, Deworming, VetVisit } from '@prisma/client'
 
 interface Props {
@@ -33,12 +35,13 @@ export default async function PaardDetailPage({ params }: Props) {
   const horse = await getHorse(id)
   if (!horse) notFound()
 
-  const [canView, role, vaccinaties, ontwormingen, bezzoeken] = await Promise.all([
+  const [canView, role, vaccinaties, ontwormingen, bezzoeken, notes] = await Promise.all([
     canViewHorse(user.id, id),
     getStableRole(user.id, horse.stableId),
     getVaccinaties(id),
     getOntwormingen(id),
     getDierenartsBezzoeken(id),
+    getNotesForHorse(id),
   ])
 
   if (!canView) notFound()
@@ -264,6 +267,22 @@ export default async function PaardDetailPage({ params }: Props) {
                 </tbody>
               </table>
             )}
+          </div>
+
+          {/* Mededelingen */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Mededelingen</span>
+            </div>
+            <div className="panel-body">
+              <MededelingenSectie
+                horseId={id}
+                notes={notes}
+                canCreate={canEdit}
+                userId={user.id}
+                isOwner={role === 'OWNER'}
+              />
+            </div>
           </div>
 
         </div>

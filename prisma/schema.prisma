@@ -31,6 +31,7 @@ model User {
   // Een gebruiker kan staf/eigenaar van stallen zijn én eigenaar van paarden.
   stableMemberships StableMember[]
   horseOwnerships   HorseOwner[]
+  stableNotes       StableNote[]
 }
 
 // ── Stal (pensionbedrijf) ────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ model Horse {
   dewormings   Deworming[]
   vetVisits    VetVisit[]
   tasks        Task[]
+  stableNotes  StableNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -198,6 +200,21 @@ model Task {
   horse  Horse?  @relation(fields: [horseId], references: [id], onDelete: SetNull)
 
   @@index([stableId, date])
+}
+
+// ── Mededelingen per paard (stap 5) ─────────────────────────────────────────
+
+model StableNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  horseId   String   @db.Uuid
+  authorId  String   @db.Uuid
+  message   String
+  createdAt DateTime @default(now())
+
+  horse  Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([horseId])
 }
 
 // ── Autorisatie-logica (in app-laag, niet in schema) ─────────────────────────

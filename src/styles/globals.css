@@ -1686,3 +1686,38 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 /* Select taak */
 .select--taak { max-width: 200px; }
+
+/* Mededelingen */
+.note-item {
+  background: var(--velaro-color-surf-2);
+  border: 1px solid var(--velaro-color-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.note-item__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.note-item__author {
+  font-size: var(--velaro-text-sm);
+  font-weight: 500;
+  color: var(--velaro-color-navy);
+}
+
+.note-item__date {
+  font-size: var(--velaro-text-xs);
+  color: var(--velaro-color-muted);
+  margin-right: auto;
+}
+
+.note-item__message {
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
