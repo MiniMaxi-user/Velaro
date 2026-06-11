@@ -108,3 +108,71 @@ export async function deleteDierenartsBeezoek(id: string, horseId: string) {
   await prisma.vetVisit.delete({ where: { id } })
   revalidatePath(`/paarden/${horseId}`)
 }
+
+export async function updateVaccinatie(id: string, horseId: string, formData: FormData) {
+  await getAuthorizedUser(horseId)
+
+  const dateStr = formData.get('date') as string
+  const type = (formData.get('type') as string)?.trim()
+  const nextDateStr = formData.get('nextDate') as string
+
+  if (!dateStr || !type) throw new Error('Datum en type zijn verplicht')
+
+  await prisma.vaccination.update({
+    where: { id },
+    data: {
+      date: new Date(dateStr),
+      type,
+      nextDate: nextDateStr ? new Date(nextDateStr) : null,
+      notes: (formData.get('notes') as string)?.trim() || null,
+    },
+  })
+
+  revalidatePath(`/paarden/${horseId}`)
+  redirect(`/paarden/${horseId}`)
+}
+
+export async function updateOntworming(id: string, horseId: string, formData: FormData) {
+  await getAuthorizedUser(horseId)
+
+  const dateStr = formData.get('date') as string
+  const product = (formData.get('product') as string)?.trim()
+  const nextDateStr = formData.get('nextDate') as string
+
+  if (!dateStr || !product) throw new Error('Datum en product zijn verplicht')
+
+  await prisma.deworming.update({
+    where: { id },
+    data: {
+      date: new Date(dateStr),
+      product,
+      nextDate: nextDateStr ? new Date(nextDateStr) : null,
+      notes: (formData.get('notes') as string)?.trim() || null,
+    },
+  })
+
+  revalidatePath(`/paarden/${horseId}`)
+  redirect(`/paarden/${horseId}`)
+}
+
+export async function updateDierenartsBeezoek(id: string, horseId: string, formData: FormData) {
+  await getAuthorizedUser(horseId)
+
+  const dateStr = formData.get('date') as string
+  const reason = (formData.get('reason') as string)?.trim()
+
+  if (!dateStr || !reason) throw new Error('Datum en reden zijn verplicht')
+
+  await prisma.vetVisit.update({
+    where: { id },
+    data: {
+      date: new Date(dateStr),
+      vet: (formData.get('vet') as string)?.trim() || null,
+      reason,
+      notes: (formData.get('notes') as string)?.trim() || null,
+    },
+  })
+
+  revalidatePath(`/paarden/${horseId}`)
+  redirect(`/paarden/${horseId}`)
+}

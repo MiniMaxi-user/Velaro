@@ -7,6 +7,10 @@ export async function getVaccinaties(horseId: string) {
   })
 }
 
+export async function getVaccinatie(id: string) {
+  return prisma.vaccination.findUnique({ where: { id } })
+}
+
 export async function getOntwormingen(horseId: string) {
   return prisma.deworming.findMany({
     where: { horseId },
@@ -14,9 +18,17 @@ export async function getOntwormingen(horseId: string) {
   })
 }
 
+export async function getOntworming(id: string) {
+  return prisma.deworming.findUnique({ where: { id } })
+}
+
 export async function getDierenartsBezzoeken(horseId: string) {
   return prisma.vetVisit.findMany({
     where: { horseId },
     orderBy: { date: 'desc' },
   })
+}
+
+export async function getDierenartsBeezoek(id: string) {
+  return prisma.vetVisit.findUnique({ where: { id } })
 }

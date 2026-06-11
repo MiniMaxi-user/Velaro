@@ -12,18 +12,30 @@ Beachhead-doelgroep: **pensionstallen** (terugkerende omzet, veel paarden onder 
 Géén marketplace, géén publieke API, géén AI-modules in de MVP. Die komen later.
 
 De drie soorten gebruikers in de MVP:
-- **Staleigenaar** — beheert de stal en alle paarden erin.
-- **Stalmedewerker** — werkt mee op de stal, beperktere rechten.
+- **Staleigenaar** (`OWNER`) — beheert de stal en alle paarden erin.
+- **Stalmedewerker** (`STAFF`) — werkt mee op de stal, beperktere rechten.
 - **Paardeneigenaar** — ziet (alleen) het profiel van zijn/haar eigen paard(en).
+- **Platform-admin** — beheert stallen en eigenaren op platform-niveau (apart admin-gedeelte).
 
 ## Tech-stack (vastgelegd — niet wijzigen zonder overleg)
 
 - **Next.js** (App Router) + **TypeScript**
-- **Supabase** — Auth én Postgres (één dienst)
-- **Prisma** — ORM op de Postgres-database
-- **Tailwind CSS** — styling
+- **Supabase** — Auth én Postgres (één dienst); project `uzusejchqkqnivkmxbxe`, regio `eu-north-1`
+- **Prisma 6** — ORM op de Postgres-database (géén Prisma 7 — dat vereist `prisma.config.ts`)
+- **Tailwind CSS v4** — styling via `@theme` in CSS; **geen `tailwind.config.ts`**
 - **Vercel** — hosting/deploy
-- Package manager: **pnpm** (val terug op npm als pnpm niet beschikbaar is)
+- Package manager: **npm** (pnpm niet beschikbaar op deze machine)
+
+### Tailwind v4 tokens
+Tokens staan in `src/styles/globals.css` als `@theme { … }`. Utility-klassen zijn direct afgeleid:
+`bg-background`, `bg-surface-1`, `bg-surface-2`, `text-navy`, `text-gold`, `border-border`, etc.
+Nooit een `tailwind.config.ts` aanmaken — dat is Tailwind v3.
+
+### Prisma
+`prisma generate` en `prisma migrate` altijd via `npx prisma` in `C:\Claude\velaro`.
+Prisma CLI leest `.env` (niet `.env.local`). Beide bestanden bestaan:
+- `.env` — voor Prisma CLI
+- `.env.local` — voor Next.js runtime
 
 ### Belangrijk onderscheid: authenticatie vs. autorisatie
 - **Authenticatie** ("wie ben je") = Supabase Auth. Niet zelf bouwen.
@@ -38,20 +50,46 @@ Abstraheer pas als een patroon zich twee keer herhaalt — niet vooraf.
 
 ```
 src/
-  app/                # routes (App Router)
-    (auth)/           # login, wachtwoord vergeten
-    (app)/            # ingelogde omgeving
-      stal/           # stal-dashboard, overzicht paarden
-      paarden/        # paardenprofiel (CRUD)
-  features/           # domeinlogica per feature
+  app/                          # routes (App Router)
+    (auth)/                     # login, wachtwoord vergeten
+    (app)/                      # ingelogde omgeving
+      layout.tsx                # app-shell: Sidebar + Topbar
+      stal/                     # actieve stal: dashboard, leden, taken
+        leden/
+        taken/
+      paarden/                  # paardenprofiel (CRUD + gezondheid)
+        [id]/
+          vaccinaties/nieuw/
+          ontworming/nieuw/
+          dierenarts/nieuw/
+          bewerken/
+      stallen/                  # multi-stal beheer (OWNER: meerdere stallen)
+        nieuw/
+      admin/                    # platform-admin (eigenaren beheren)
+        eigenaren/
+          nieuw/
+  features/                     # domeinlogica per feature
     auth/
     stal/
     paarden/
-  components/         # herbruikbare UI (zie design system)
-  lib/                # supabase client, prisma client, helpers
-    supabase/
-    auth/             # autorisatie-helpers (rolcontrole)
-  styles/             # globals.css met design tokens
+    gezondheid/
+    taken/
+    stallen/
+    admin/
+  components/                   # herbruikbare UI
+    Sidebar.tsx                 # server component, sidebar nav
+    SidebarClient.tsx           # client component, collapse-state
+    Topbar.tsx                  # topbar met stal-context
+    TopbarUserMenu.tsx          # user dropdown in topbar
+    SignOutButton.tsx            # in sidebar-footer
+    SubmitButton.tsx
+  lib/
+    supabase/                   # client.ts, server.ts, admin.ts
+    auth/                       # autorisatie-helpers (rolcontrole)
+    active-stable.ts            # actieve-stal-switcher helper
+    prisma.ts
+  styles/
+    globals.css                 # design tokens (@theme) + component CSS
 prisma/
   schema.prisma
 ```
@@ -63,42 +101,57 @@ prisma/
 - Database/Prisma-modellen: enkelvoud, `PascalCase` (`Horse`, `Stable`).
 - Route-mappen: Nederlands, lowercase (`paarden`, `stal`) — UI is Nederlandstalig.
 - UI-teksten: **Nederlands**.
+- `StableRole` enum: `OWNER` (staleigenaar) | `STAFF` (stalmedewerker).
 
-## Design system (bron: velaro-designsystem repo)
+## Design system
 
-De stijl is een **premium, donker thema met goud/amber accenten**, kaart-gebaseerd,
-rustig en exclusief van uitstraling.
+De stijl is een **premium, licht thema met cream/navy en goud/amber accenten**,
+kaart-gebaseerd, rustig en exclusief van uitstraling.
 
-**Bron van waarheid voor tokens:** `src/styles/index.css` in de
-`velaro-designsystem` repo. Lees dat bestand en **port de tokens 1-op-1** naar
-`src/styles/globals.css` (CSS-variabelen) + `tailwind.config.ts`. Verzin geen
-nieuwe kleuren, fonts of spacing — neem over wat er staat.
+**Bron van waarheid voor tokens:** `src/styles/globals.css` (`@theme { … }`-blok).
+Verzin geen nieuwe kleuren, fonts of spacing — neem over wat er staat.
 
-Bevestigde kernkleuren (controleer/aanvul vanuit de CSS):
-- Goud (primair accent): `#D8BD71`
-- Donker-goud: `#BEA256`
-- Perzik/amber: `#F2AD75`
-- Donkere achtergrond: rond `#1e2327`
-- Gedempte tekst: via `--muted`
+Kernkleuren:
+- Achtergrond:     `#F5F3EE` (`--velaro-color-bg`)
+- Surface-1:       `#FFFFFF`
+- Surface-2:       `#EEEAE2`
+- Navy (tekst/UI): `#1A2B4A`
+- Goud (accent):   `#D8BD71`
+- Donker-goud:     `#BEA256`
+- Amber:           `#F2AD75`
+- Muted tekst:     `#6B7280`
 
-Bestaande class-conventies om aan te houden (uit het design system):
-`btn-primary` (+ `btn-primary--full`), `btn-ghost`, `input`, `form-group`,
-`form-label`, `form-row`, `form-link`, `auth-layout`, `auth-card`, `auth-logo`,
-`auth-heading`, `auth-sub`, `auth-divider`, `auth-footer`, `hero-tag`, `label`,
-en de kaartpatronen (`*-card`).
+Typografie: **Cormorant Garamond** (serif, koppen) + **Inter** (sans, body).
+Google Fonts `@import` moet **vóór** `@import "tailwindcss"` staan (CSS spec-vereiste).
+
+### Layout-patroon: sidebar
+```
+.app-shell          # flex-wrapper voor de hele app
+  .sidebar          # navy links, vaste breedte, inklapbaar
+  .app-main         # flex-column rechts
+    Topbar          # bovenaan: stal-context + user-menu
+    .content-area   # paginacontent
+```
+
+Bestaande class-conventies (auth-schermen):
+`auth-layout`, `auth-card`, `auth-logo`, `auth-heading`, `auth-sub`,
+`auth-divider`, `auth-footer`, `form-group`, `form-label`, `form-row`,
+`form-link`, `btn-primary` (+ `btn-primary--full`), `btn-ghost`, `input`, `label`.
 
 De `login.html` uit het design system is het referentiepunt voor de auth-schermen.
-Logo: `velaro_logo.png`.
+Logo: `velaro_logo.png` (staat in `public/`).
 
-## Bouwvolgorde (van fundament naar feature — strikt aanhouden)
+## Bouwvolgorde (van fundament naar feature)
 
-1. **Datamodel + auth** — Prisma-schema (zie `prisma/schema.prisma`), Supabase Auth,
-   rollen/autorisatie-helpers. Login- en wachtwoord-vergeten-scherm in de huisstijl.
-2. **Centraal paardenprofiel (CRUD)** — paard aanmaken, bekijken, bewerken.
-3. **Gezondheidsregistratie** op het profiel (vaccinaties, ontworming, bezoeken).
-4. **Stalbewoners-overzicht + planning** (dashboard + dagelijkse taken/agenda).
-5. **Eigenaarscommunicatie + gedeeld profiel** (eigenaar ziet zijn paard).
-6. **Facturatie** (maandelijkse stalling + extra's). Bewust als laatste.
+1. ✅ **Datamodel + auth** — Prisma-schema, Supabase Auth, rollen/autorisatie-helpers,
+   login- en wachtwoord-vergeten-scherm.
+2. ✅ **Centraal paardenprofiel (CRUD)** — paard aanmaken, bekijken, bewerken.
+3. ✅ **Gezondheidsregistratie** — vaccinaties, ontworming, dierenartsbezoekenop het profiel.
+4. ✅ **Stalbewoners-overzicht + taken** — ledenlijst, taken/planning.
+   Ook gebouwd: **multi-stal beheer** (OWNER beheert meerdere stallen, actieve-stal-switcher)
+   en **platform-admin** (eigenaren + quota beheren).
+5. ⬜ **Eigenaarscommunicatie + gedeeld profiel** — eigenaar ziet zijn paard.
+6. ⬜ **Facturatie** — maandelijkse stalling + extra's. Bewust als laatste.
 
 > Buiten de MVP, niet bouwen tot afgesproken: open API, marketplace, AI-modules,
 > integraties (KNHS/FEI), wearables.
@@ -108,7 +161,7 @@ Logo: `velaro_logo.png`.
 - **Plan eerst, code daarna.** Bij elke nieuwe stap of feature: lever eerst een kort
   plan (welke bestanden, welk datamodel-effect, welke routes). Wacht op akkoord.
 - **Werk per stap uit de bouwvolgorde.** Niet vooruitlopen op latere stappen.
-- **Fundament-stappen (1 en 2) streng**: geen schema-wijzigingen zonder overleg.
+- **Fundament-stappen streng**: geen schema-wijzigingen zonder overleg.
 - Houd PR's/wijzigingen klein en review-baar.
 - Geen `localStorage`-afhankelijke kernlogica; staat hoort in DB of server.
 - Bij twijfel over scope of stijl: vraag, niet aannemen.

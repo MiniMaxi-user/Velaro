@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getHorse } from '@/features/paarden/queries'
 import { getStableRole } from '@/lib/auth/authorization'
 import DierenartsBezoekreForm from '@/features/gezondheid/DierenartsBezoekreForm'
+import { createDierenartsBeezoek } from '@/features/gezondheid/actions'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -24,6 +25,8 @@ export default async function NieuwDierenartsBezoekrePage({ params }: Props) {
   const role = await getStableRole(user.id, horse.stableId)
   if (!role) notFound()
 
+  const action = createDierenartsBeezoek.bind(null, id)
+
   return (
     <main className="page-container">
       <div className="page-header">
@@ -35,7 +38,7 @@ export default async function NieuwDierenartsBezoekrePage({ params }: Props) {
         <h1 className="page-title">{horse.name}</h1>
       </div>
 
-      <DierenartsBezoekreForm horseId={id} />
+      <DierenartsBezoekreForm horseId={id} action={action} />
     </main>
   )
 }

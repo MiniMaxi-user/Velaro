@@ -171,6 +171,7 @@ export default async function PaardDetailPage({ params }: Props) {
                       <td className="gezondheid-tabel__muted">{v.notes ?? '—'}</td>
                       {canEdit && (
                         <td className="gezondheid-tabel__acties">
+                          <Link href={`/paarden/${id}/vaccinaties/${v.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
                           <DeleteGezondheidButton id={v.id} horseId={id} type="vaccinatie" />
                         </td>
                       )}
@@ -214,6 +215,7 @@ export default async function PaardDetailPage({ params }: Props) {
                       <td className="gezondheid-tabel__muted">{o.notes ?? '—'}</td>
                       {canEdit && (
                         <td className="gezondheid-tabel__acties">
+                          <Link href={`/paarden/${id}/ontworming/${o.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
                           <DeleteGezondheidButton id={o.id} horseId={id} type="ontworming" />
                         </td>
                       )}
@@ -253,6 +255,7 @@ export default async function PaardDetailPage({ params }: Props) {
                       <td className="gezondheid-tabel__muted">{b.notes ?? '—'}</td>
                       {canEdit && (
                         <td className="gezondheid-tabel__acties">
+                          <Link href={`/paarden/${id}/dierenarts/${b.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
                           <DeleteGezondheidButton id={b.id} horseId={id} type="dierenarts" />
                         </td>
                       )}
