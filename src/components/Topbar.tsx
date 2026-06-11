@@ -1,19 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
-import { prisma } from '@/lib/prisma'
+import { getAuthUser, getDbUser } from '@/lib/auth/session'
 import TopbarUserMenu from './TopbarUserMenu'
 
 export default async function Topbar() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   let displayName = user?.email?.split('@')[0] ?? 'Gebruiker'
   let initials = displayName.slice(0, 2).toUpperCase()
 
   if (user) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { name: true },
-    })
+    const dbUser = await getDbUser(user.id)
     if (dbUser?.name) {
       displayName = dbUser.name
       const parts = dbUser.name.trim().split(' ')

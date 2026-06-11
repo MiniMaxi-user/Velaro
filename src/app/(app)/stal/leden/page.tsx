@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable } from '@/features/paarden/queries'
 import { getStableWithMembers } from '@/features/stal/queries'
 import { getStableRole } from '@/lib/auth/authorization'
@@ -11,10 +11,7 @@ import RolWijzigen from '@/features/stal/RolWijzigen'
 const ROL_LABELS = { OWNER: 'Eigenaar', STAFF: 'Medewerker' }
 
 export default async function LedenPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const stable = await getUserStable(user.id)
