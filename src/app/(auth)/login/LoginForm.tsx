@@ -24,7 +24,7 @@ export default function LoginForm() {
       setFout('Ongeldig e-mailadres of wachtwoord.')
       setLaden(false)
     } else {
-      router.push('/paarden')
+      router.push('/stal')
       router.refresh()
     }
   }

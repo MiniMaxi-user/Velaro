@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable, getHorsesForStable, getHorsesForOwner } from '@/features/paarden/queries'
 import { berekenLeeftijd, GESLACHT_LABELS } from '@/features/paarden/paardHelpers'
+import { isPlatformAdmin } from '@/lib/auth/authorization'
 import type { HorseSex } from '@prisma/client'
 
 function leeftijdLabel(dateOfBirth: Date | null): string {
@@ -13,6 +14,10 @@ function leeftijdLabel(dateOfBirth: Date | null): string {
 export default async function PaardenPage() {
   const user = await getAuthUser()
   if (!user) redirect('/login')
+
+  // Platform admins hebben hun eigen dashboard
+  const isAdmin = await isPlatformAdmin(user.id)
+  if (isAdmin) redirect('/admin')
 
   const stable = await getUserStable(user.id)
 
