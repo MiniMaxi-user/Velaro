@@ -1917,3 +1917,145 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ── Topbar zoeken ── */
+.topbar-search-wrapper {
+  position: relative;
+  min-width: 220px;
+}
+
+.topbar-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--velaro-color-muted);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: var(--velaro-radius-sm);
+  transition: color 0.15s;
+}
+
+.topbar-search-clear:hover { color: var(--velaro-color-navy); }
+
+@keyframes topbar-spin {
+  to { transform: rotate(360deg); }
+}
+
+.topbar-search-spinner {
+  animation: topbar-spin 0.8s linear infinite;
+}
+
+.topbar-zoek-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 320px;
+  max-width: 420px;
+  background: var(--velaro-color-surf-1);
+  border: 1px solid var(--velaro-color-border-strong);
+  border-radius: var(--velaro-radius-lg);
+  box-shadow: var(--velaro-shadow-lg);
+  z-index: 300;
+  animation: velaro-slide-in 0.12s ease;
+  overflow: hidden;
+}
+
+.topbar-zoek-leeg {
+  padding: 20px 16px;
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-muted);
+  text-align: center;
+}
+
+.topbar-zoek-lijst {
+  list-style: none;
+  padding: 6px;
+}
+
+.topbar-zoek-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--velaro-radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  font-family: var(--velaro-font-sans);
+}
+
+.topbar-zoek-item:hover,
+.topbar-zoek-item--active {
+  background: var(--velaro-color-surf-2);
+}
+
+.topbar-zoek-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--velaro-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.topbar-zoek-icon--paard {
+  background: var(--velaro-color-gold-bg);
+  color: var(--velaro-color-gold-2);
+  border: 1px solid rgba(216,189,113,0.20);
+}
+
+.topbar-zoek-icon--stal {
+  background: rgba(26,43,74,0.06);
+  color: var(--velaro-color-navy);
+  border: 1px solid rgba(26,43,74,0.10);
+}
+
+.topbar-zoek-icon--eigenaar {
+  background: var(--velaro-color-info-bg);
+  color: var(--velaro-color-info);
+  border: 1px solid var(--velaro-color-info-border);
+}
+
+.topbar-zoek-tekst {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.topbar-zoek-naam {
+  font-size: var(--velaro-text-sm);
+  font-weight: 500;
+  color: var(--velaro-color-navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-zoek-sub {
+  font-size: 11px;
+  color: var(--velaro-color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-zoek-type-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--velaro-color-muted-2);
+  flex-shrink: 0;
+}

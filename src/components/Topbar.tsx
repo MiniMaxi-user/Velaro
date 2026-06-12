@@ -1,5 +1,6 @@
 import { getAuthUser, getDbUser } from '@/lib/auth/session'
 import TopbarUserMenu from './TopbarUserMenu'
+import TopbarSearch from './TopbarSearch'
 
 export default async function Topbar() {
   const user = await getAuthUser()
@@ -20,15 +21,7 @@ export default async function Topbar() {
 
   return (
     <header className="topbar">
-      <div className="topbar-search">
-        <span className="topbar-search-icon">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.5"/>
-            <path d="M8 8L11 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-        </span>
-        <input type="text" placeholder="Zoek paarden, stallen..." />
-      </div>
+      <TopbarSearch />
       <div className="topbar-spacer" />
       <div className="topbar-actions">
         <button className="topbar-icon-btn" title="Meldingen" aria-label="Meldingen">
