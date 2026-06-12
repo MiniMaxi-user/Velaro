@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useRef } from 'react'
 import { switchActiveStable } from '@/features/stallen/actions'
+import { ALLE_STALLEN } from '@/lib/active-stable'
 
 const EIGENAAR_NAV = [
   { href: '/eigenaar', label: 'Dashboard',    icon: 'dashboard', exact: true },
@@ -135,6 +136,7 @@ export default function SidebarClient({
               onChange={() => switchFormRef.current?.requestSubmit()}
               className="stalswitcher-select"
             >
+              <option value={ALLE_STALLEN}>Alle stallen</option>
               {stables.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

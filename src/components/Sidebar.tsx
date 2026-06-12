@@ -1,6 +1,6 @@
 import { getAuthUser, getDbUser } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
-import { getActiveStableId } from '@/lib/active-stable'
+import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
 import { getMemberships } from '@/lib/auth/authorization'
 import SidebarClient from './SidebarClient'
 
@@ -30,6 +30,8 @@ export default async function Sidebar() {
   const activeMembership = memberships.find((m) => m.stableId === activeStableId)
   let rolLabel = isPlatformAdmin
     ? 'Platform Admin'
+    : activeStableId === ALLE_STALLEN
+    ? 'Alle stallen'
     : activeMembership
     ? (ROL_LABELS[activeMembership.role] ?? activeMembership.role)
     : 'Paardeneigenaar'

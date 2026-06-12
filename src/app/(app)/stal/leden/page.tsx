@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable } from '@/features/paarden/queries'
 import { getStableWithMembers } from '@/features/stal/queries'
-import { getStableRole } from '@/lib/auth/authorization'
+import { getStableRole, getMemberships } from '@/lib/auth/authorization'
+import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
 import LidToevoegen from '@/features/stal/LidToevoegen'
 import LidVerwijderenButton from '@/features/stal/LidVerwijderenButton'
 import RolWijzigen from '@/features/stal/RolWijzigen'
@@ -14,6 +15,78 @@ export default async function LedenPage() {
   const user = await getAuthUser()
   if (!user) redirect('/login')
 
+  const activeStableId = await getActiveStableId(user.id)
+  const alleStallen = activeStableId === ALLE_STALLEN
+
+  // Modus: alle stallen van de gebruiker
+  if (alleStallen) {
+    const memberships = await getMemberships(user.id)
+    const stablesWithMembers = await Promise.all(
+      memberships.map((m) => getStableWithMembers(m.stableId))
+    )
+
+    return (
+      <main className="page-container">
+        <div className="page-header">
+          <div>
+            <div className="label">Stalbeheer</div>
+            <h1 className="page-title">
+              <em>Leden</em> — Alle stallen
+            </h1>
+          </div>
+          <Link href="/stal" className="btn-ghost">
+            ← Stal
+          </Link>
+        </div>
+
+        {stablesWithMembers.map((stableWithMembers) => {
+          if (!stableWithMembers) return null
+          const myMembership = memberships.find((m) => m.stableId === stableWithMembers.id)
+          const isOwner = myMembership?.role === 'OWNER'
+
+          return (
+            <div key={stableWithMembers.id} style={{ marginBottom: 'var(--velaro-space-8)' }}>
+              <div style={{ marginBottom: 'var(--velaro-space-4)' }}>
+                <span className="label">{stableWithMembers.name}</span>
+              </div>
+              <div className="leden-tabel-wrapper">
+                <table className="leden-tabel">
+                  <thead>
+                    <tr>
+                      <th>Naam</th>
+                      <th>E-mailadres</th>
+                      <th>Rol</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stableWithMembers.members.map((member) => {
+                      const isSelf = member.userId === user.id
+                      return (
+                        <tr key={member.id} className={isSelf ? 'leden-tabel__self' : ''}>
+                          <td>
+                            {member.user.name ?? '—'}
+                            {isSelf && <span className="leden-badge leden-badge--self">jij</span>}
+                          </td>
+                          <td className="leden-tabel__muted">{member.user.email}</td>
+                          <td>
+                            <span className={`leden-badge leden-badge--${member.role.toLowerCase()}`}>
+                              {ROL_LABELS[member.role]}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        })}
+      </main>
+    )
+  }
+
+  // Modus: specifieke actieve stal
   const stable = await getUserStable(user.id)
   if (!stable) {
     return (

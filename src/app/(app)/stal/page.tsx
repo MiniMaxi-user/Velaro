@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable, getHorsesForStable } from '@/features/paarden/queries'
 import { getTaskCountsForDate } from '@/features/taken/queries'
-import { getStableRole, canCreateStable, isPlatformAdmin } from '@/lib/auth/authorization'
+import { getStableRole, canCreateStable, isPlatformAdmin, getMemberships } from '@/lib/auth/authorization'
 import { getAankomendGezondheidActies } from '@/features/gezondheid/queries'
 import AankomendZorgPanel from '@/features/gezondheid/AankomendZorgPanel'
 import { prisma } from '@/lib/prisma'
+import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
 
 function toDateParam(d: Date) {
   return d.toISOString().slice(0, 10)
@@ -20,6 +21,146 @@ export default async function StalPage() {
   const isAdmin = await isPlatformAdmin(user.id)
   if (isAdmin) redirect('/admin')
 
+  const activeStableId = await getActiveStableId(user.id)
+  const alleStallen = activeStableId === ALLE_STALLEN
+
+  // Modus: alle stallen van de gebruiker
+  if (alleStallen) {
+    const memberships = await getMemberships(user.id)
+    if (memberships.length === 0) redirect('/eigenaar')
+
+    const stableIds = memberships.map((m) => m.stableId)
+    const today = new Date()
+    const hour = today.getHours()
+    const begroeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond'
+
+    const [horses, takenCounts, zorgActiesPerStal] = await Promise.all([
+      prisma.horse.findMany({
+        where: { stableId: { in: stableIds } },
+        orderBy: { name: 'asc' },
+      }),
+      Promise.all(stableIds.map((id) => getTaskCountsForDate(id, today))),
+      Promise.all(stableIds.map((id) => getAankomendGezondheidActies(id, 30))),
+    ])
+
+    const takenVandaag = takenCounts.reduce(
+      (acc, c) => ({ total: acc.total + c.total, completed: acc.completed + c.completed }),
+      { total: 0, completed: 0 },
+    )
+    const zorgActies = zorgActiesPerStal.flat()
+    const openTaken = takenVandaag.total - takenVandaag.completed
+    const verlopenZorg = zorgActies.filter((a) => a.isVerlopen).length
+    const takenPercentage =
+      takenVandaag.total > 0
+        ? Math.round((takenVandaag.completed / takenVandaag.total) * 100)
+        : null
+
+    return (
+      <>
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="breadcrumb">
+              <span className="breadcrumb-current">Dashboard</span>
+            </div>
+            <h1 className="page-title">{begroeting} — <em>Alle stallen</em></h1>
+          </div>
+          <div className="page-header-actions">
+            <Link href="/paarden/nieuw" className="btn-primary">+ Nieuw paard</Link>
+          </div>
+        </div>
+
+        <div className="kpi-row">
+          <div className="kpi-card">
+            <div className="kpi-card-icon">🐴</div>
+            <div className="kpi-card-body">
+              <div className="kpi-card-value">{horses.length}</div>
+              <div className="kpi-card-label">Paarden</div>
+              <div className="kpi-card-trend flat">alle stallen</div>
+            </div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-card-icon amber">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="2" y="4" width="14" height="12" rx="2" stroke="var(--velaro-color-warning)" strokeWidth="1.4"/>
+                <path d="M5 2v4M13 2v4M2 8h14" stroke="var(--velaro-color-warning)" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="kpi-card-body">
+              <div className="kpi-card-value">{openTaken}</div>
+              <div className="kpi-card-label">Open taken vandaag</div>
+              <div className="kpi-card-trend flat">alle stallen</div>
+            </div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-card-icon success">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M4 9l4 4 6-7" stroke="var(--velaro-color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="kpi-card-body">
+              <div className="kpi-card-value">
+                {takenVandaag.total > 0
+                  ? `${takenVandaag.completed}/${takenVandaag.total}`
+                  : '—'}
+              </div>
+              <div className="kpi-card-label">Taken afgerond</div>
+              {takenPercentage !== null && (
+                <div className={`kpi-card-trend ${takenPercentage >= 80 ? 'up' : takenPercentage >= 40 ? 'flat' : 'down'}`}>
+                  {takenPercentage}% voltooid
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="kpi-card">
+            <div className={`kpi-card-icon ${verlopenZorg > 0 ? 'amber' : 'success'}`}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 3v5l3 3" stroke={verlopenZorg > 0 ? 'var(--velaro-color-warning)' : 'var(--velaro-color-success)'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="9" cy="9" r="7" stroke={verlopenZorg > 0 ? 'var(--velaro-color-warning)' : 'var(--velaro-color-success)'} strokeWidth="1.4"/>
+              </svg>
+            </div>
+            <div className="kpi-card-body">
+              <div className="kpi-card-value" style={verlopenZorg > 0 ? { color: 'var(--velaro-color-warning)' } : undefined}>
+                {verlopenZorg > 0 ? verlopenZorg : zorgActies.length}
+              </div>
+              <div className="kpi-card-label">
+                {verlopenZorg > 0 ? 'Verlopen zorg' : 'Aankomende zorg (30d)'}
+              </div>
+              <div className={`kpi-card-trend ${verlopenZorg > 0 ? 'down' : 'flat'}`}>
+                {verlopenZorg > 0 ? `▼ ${verlopenZorg} verlopen` : 'komende 30 dagen'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <AankomendZorgPanel acties={zorgActies} />
+
+        {horses.length > 0 && (
+          <div>
+            <div style={{ marginBottom: 10 }}>
+              <span className="label">Stalbewoners — alle stallen</span>
+            </div>
+            <div className="paard-kaart-grid">
+              {horses.map((horse) => (
+                <Link key={horse.id} href={`/paarden/${horse.id}`} className="paard-kaart">
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div className="paard-kaart__naam">{horse.name}</div>
+                    {horse.boxNumber && (
+                      <span className="badge badge-neutral" style={{ marginLeft: 8, flexShrink: 0 }}>Box {horse.boxNumber}</span>
+                    )}
+                  </div>
+                  <div className="paard-kaart__meta">
+                    {[horse.breed, horse.discipline].filter(Boolean).join(' · ') || 'Geen verdere gegevens'}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // Modus: specifieke actieve stal
   const [stable, canCreate] = await Promise.all([
     getUserStable(user.id),
     canCreateStable(user.id),

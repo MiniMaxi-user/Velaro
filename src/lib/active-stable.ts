@@ -4,9 +4,15 @@ import { prisma } from '@/lib/prisma'
 
 const COOKIE_NAME = 'velaro-active-stable'
 
+/** Schildwacht-waarde: de gebruiker heeft "Alle stallen" gekozen. */
+export const ALLE_STALLEN = 'alle'
+
 export const getActiveStableId = cache(async (userId: string): Promise<string | null> => {
   const cookieStore = await cookies()
   const cookieStableId = cookieStore.get(COOKIE_NAME)?.value
+
+  // Schildwacht-waarde: de gebruiker wil data van alle stallen zien
+  if (cookieStableId === ALLE_STALLEN) return ALLE_STALLEN
 
   if (cookieStableId) {
     const member = await prisma.stableMember.findUnique({
@@ -24,7 +30,8 @@ export const getActiveStableId = cache(async (userId: string): Promise<string | 
 
 export async function getActiveStable(userId: string) {
   const stableId = await getActiveStableId(userId)
-  if (!stableId) return null
+  // Schildwacht-waarde geeft geen specifieke stal terug
+  if (!stableId || stableId === ALLE_STALLEN) return null
   return prisma.stable.findUnique({ where: { id: stableId } })
 }
 

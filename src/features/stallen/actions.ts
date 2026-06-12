@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { canCreateStable } from '@/lib/auth/authorization'
-import { activeStableCookieName } from '@/lib/active-stable'
+import { activeStableCookieName, ALLE_STALLEN } from '@/lib/active-stable'
 
 export async function createStable(formData: FormData) {
   const supabase = await createClient()
@@ -54,10 +54,13 @@ export async function switchActiveStable(formData: FormData) {
   const stableId = formData.get('stableId') as string
   if (!stableId) return
 
-  const member = await prisma.stableMember.findUnique({
-    where: { stableId_userId: { stableId, userId: user.id } },
-  })
-  if (!member) throw new Error('Geen toegang tot deze stal')
+  // Schildwacht-waarde: geen member-check nodig
+  if (stableId !== ALLE_STALLEN) {
+    const member = await prisma.stableMember.findUnique({
+      where: { stableId_userId: { stableId, userId: user.id } },
+    })
+    if (!member) throw new Error('Geen toegang tot deze stal')
+  }
 
   const cookieStore = await cookies()
   cookieStore.set(activeStableCookieName(), stableId, {
