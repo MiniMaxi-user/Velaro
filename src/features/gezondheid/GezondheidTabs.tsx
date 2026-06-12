@@ -6,6 +6,29 @@ import type { Vaccination, Deworming, VetVisit, HoefsmitBezoek } from '@prisma/c
 import DeleteGezondheidButton from './DeleteGezondheidButton'
 import { formatDatum } from '@/features/paarden/paardHelpers'
 
+type DatumStatus = 'verlopen' | 'spoedig' | 'ok'
+
+function getDatumStatus(nextDate: Date | null): DatumStatus | null {
+  if (!nextDate) return null
+  const vandaag = new Date()
+  vandaag.setHours(0, 0, 0, 0)
+  const grens = new Date(vandaag)
+  grens.setDate(grens.getDate() + 30)
+  if (nextDate < vandaag) return 'verlopen'
+  if (nextDate <= grens) return 'spoedig'
+  return 'ok'
+}
+
+function DatumBadge({ date }: { date: Date | null }) {
+  if (!date) return <span className="gezondheid-tabel__muted">—</span>
+  const status = getDatumStatus(date)
+  return (
+    <span className={`gezondheid-datum gezondheid-datum--${status}`}>
+      {formatDatum(date)}
+    </span>
+  )
+}
+
 interface Props {
   horseId: string
   vaccinaties: Vaccination[]
@@ -102,9 +125,7 @@ export default function GezondheidTabs({
                   <td>{formatDatum(new Date(v.date))}</td>
                   <td>{v.type}</td>
                   <td>
-                    {v.nextDate
-                      ? <span className="gezondheid-next">{formatDatum(new Date(v.nextDate))}</span>
-                      : <span className="gezondheid-tabel__muted">—</span>}
+                    <DatumBadge date={v.nextDate ? new Date(v.nextDate) : null} />
                   </td>
                   <td className="gezondheid-tabel__muted">{v.notes ?? '—'}</td>
                   {canEdit && (
@@ -141,9 +162,7 @@ export default function GezondheidTabs({
                   <td>{formatDatum(new Date(o.date))}</td>
                   <td>{o.product}</td>
                   <td>
-                    {o.nextDate
-                      ? <span className="gezondheid-next">{formatDatum(new Date(o.nextDate))}</span>
-                      : <span className="gezondheid-tabel__muted">—</span>}
+                    <DatumBadge date={o.nextDate ? new Date(o.nextDate) : null} />
                   </td>
                   <td className="gezondheid-tabel__muted">{o.notes ?? '—'}</td>
                   {canEdit && (
@@ -215,9 +234,7 @@ export default function GezondheidTabs({
                   <td>{formatDatum(new Date(h.date))}</td>
                   <td className="gezondheid-tabel__muted">{h.hoefsmid ?? '—'}</td>
                   <td>
-                    {h.nextDate
-                      ? <span className="gezondheid-next">{formatDatum(new Date(h.nextDate))}</span>
-                      : <span className="gezondheid-tabel__muted">—</span>}
+                    <DatumBadge date={h.nextDate ? new Date(h.nextDate) : null} />
                   </td>
                   <td className="gezondheid-tabel__muted">{h.notes ?? '—'}</td>
                   {canEdit && (

@@ -1733,6 +1733,21 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   font-weight: 500;
 }
 
+/* Volgende datum in gezondheidsoverzicht — statuskleur */
+.gezondheid-datum {
+  font-size: 12px;
+  font-weight: 500;
+}
+.gezondheid-datum--verlopen {
+  color: var(--velaro-color-danger);
+}
+.gezondheid-datum--spoedig {
+  color: var(--velaro-color-warning);
+}
+.gezondheid-datum--ok {
+  color: var(--velaro-color-success);
+}
+
 /* Leden tabel */
 .leden-tabel-wrapper {
   background: var(--velaro-color-surf-1);
