@@ -85,6 +85,81 @@ export async function getAankomendGezondheidActies(
   return acties
 }
 
+export async function getZorgActiesVoorPaard(
+  horseId: string,
+  dagenVooruit = 60,
+): Promise<GezondheidActie[]> {
+  const vandaag = new Date()
+  vandaag.setHours(0, 0, 0, 0)
+
+  const grens = new Date(vandaag)
+  grens.setDate(grens.getDate() + dagenVooruit)
+
+  const [vaccinaties, ontwormingen, hoefsmitBezoeKen] = await Promise.all([
+    prisma.vaccination.findMany({
+      where: {
+        horseId,
+        nextDate: { lte: grens },
+      },
+      include: { horse: { select: { id: true, name: true } } },
+    }),
+    prisma.deworming.findMany({
+      where: {
+        horseId,
+        nextDate: { lte: grens },
+      },
+      include: { horse: { select: { id: true, name: true } } },
+    }),
+    prisma.hoefsmitBezoek.findMany({
+      where: {
+        horseId,
+        nextDate: { lte: grens },
+      },
+      include: { horse: { select: { id: true, name: true } } },
+    }),
+  ])
+
+  const acties: GezondheidActie[] = [
+    ...vaccinaties
+      .filter((v) => v.nextDate !== null)
+      .map((v) => ({
+        id: v.id,
+        horseId: v.horse.id,
+        horseName: v.horse.name,
+        type: 'vaccinatie' as const,
+        omschrijving: v.type,
+        nextDate: v.nextDate!,
+        isVerlopen: v.nextDate! < vandaag,
+      })),
+    ...ontwormingen
+      .filter((d) => d.nextDate !== null)
+      .map((d) => ({
+        id: d.id,
+        horseId: d.horse.id,
+        horseName: d.horse.name,
+        type: 'ontworming' as const,
+        omschrijving: d.product,
+        nextDate: d.nextDate!,
+        isVerlopen: d.nextDate! < vandaag,
+      })),
+    ...hoefsmitBezoeKen
+      .filter((h) => h.nextDate !== null)
+      .map((h) => ({
+        id: h.id,
+        horseId: h.horse.id,
+        horseName: h.horse.name,
+        type: 'hoefsmit' as const,
+        omschrijving: h.hoefsmid ? `Hoefsmid: ${h.hoefsmid}` : 'Hoefsmit',
+        nextDate: h.nextDate!,
+        isVerlopen: h.nextDate! < vandaag,
+      })),
+  ]
+
+  acties.sort((a, b) => a.nextDate.getTime() - b.nextDate.getTime())
+
+  return acties
+}
+
 export async function getVaccinaties(horseId: string) {
   return prisma.vaccination.findMany({
     where: { horseId },

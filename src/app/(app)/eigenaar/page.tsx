@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getHorsesForOwner } from '@/features/paarden/queries'
 import { getNotesForHorse, getUnreadCountForOwner } from '@/features/mededelingen/queries'
+import { getZorgActiesVoorPaard } from '@/features/gezondheid/queries'
 import { berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 
 export default async function EigenaarPage() {
@@ -11,10 +12,11 @@ export default async function EigenaarPage() {
 
   const horses = await getHorsesForOwner(user.id)
 
-  // Laad de laatste 2 mededelingen en ongelezen-tellers per paard parallel
-  const [notesPerPaard, ongelezen] = await Promise.all([
+  // Laad de laatste 2 mededelingen, ongelezen-tellers en zorgacties per paard parallel
+  const [notesPerPaard, ongelezen, zorgActiesPerPaard] = await Promise.all([
     Promise.all(horses.map((h) => getNotesForHorse(h.id, 2))),
     Promise.all(horses.map((h) => getUnreadCountForOwner(user.id, h.id))),
+    Promise.all(horses.map((h) => getZorgActiesVoorPaard(h.id, 60))),
   ])
 
   return (
@@ -40,6 +42,8 @@ export default async function EigenaarPage() {
           {horses.map((horse, index) => {
             const leeftijd = horse.dateOfBirth ? berekenLeeftijd(new Date(horse.dateOfBirth)) : null
             const notes = notesPerPaard[index]
+            const zorgActies = zorgActiesPerPaard[index]
+            const verlopenActies = zorgActies.filter((a) => a.isVerlopen)
 
             return (
               <div key={horse.id} className="panel">
@@ -50,6 +54,11 @@ export default async function EigenaarPage() {
                       {ongelezen[index].ongelezen > 0 && (
                         <span className="badge badge-warning">
                           {ongelezen[index].ongelezen} nieuw
+                        </span>
+                      )}
+                      {verlopenActies.length > 0 && (
+                        <span className="badge badge-warning">
+                          {verlopenActies.length} zorg verlopen
                         </span>
                       )}
                     </div>
@@ -84,6 +93,46 @@ export default async function EigenaarPage() {
                           <div className="note-item__message">{note.message}</div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {zorgActies.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 16,
+                        paddingTop: 16,
+                        borderTop: '1px solid var(--velaro-color-border)',
+                      }}
+                    >
+                      <div className="label" style={{ marginBottom: 8 }}>Zorgstatus</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {zorgActies.map((actie) => (
+                          <div
+                            key={actie.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '10px 12px',
+                              background: 'var(--velaro-color-surf-2)',
+                              borderRadius: 'var(--velaro-radius-md)',
+                              fontSize: 'var(--velaro-text-sm)',
+                            }}
+                          >
+                            {actie.isVerlopen ? (
+                              <span className="badge badge-warning" style={{ flexShrink: 0 }}>Verlopen</span>
+                            ) : (
+                              <span className="badge badge-neutral" style={{ flexShrink: 0 }}>
+                                {formatDatum(actie.nextDate)}
+                              </span>
+                            )}
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              {actie.type === 'vaccinatie' ? 'Vaccinatie' : actie.type === 'ontworming' ? 'Ontworming' : 'Hoefsmit'}
+                              {actie.omschrijving ? ` — ${actie.omschrijving}` : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
