@@ -33,6 +33,7 @@ model User {
   horseOwnerships   HorseOwner[]
   stableNotes       StableNote[]
   stableNoteReads   StableNoteRead[]
+  stableAnnouncements StableAnnouncement[]
 }
 
 // ── Stal (pensionbedrijf) ────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ model Stable {
   horses         Horse[]
   tasks          Task[]
   recurringTasks RecurringTask[]
+  announcements  StableAnnouncement[]
 }
 
 // Koppelt een gebruiker aan een stal met een rol (staf/eigenaar van de stal).
@@ -251,6 +253,19 @@ model StableNoteRead {
 
   @@unique([noteId, userId])
   @@index([userId])
+}
+
+model StableAnnouncement {
+  id        String   @id @default(uuid()) @db.Uuid
+  stableId  String   @db.Uuid
+  authorId  String   @db.Uuid
+  message   String
+  createdAt DateTime @default(now())
+
+  stable Stable @relation(fields: [stableId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([stableId])
 }
 
 // ── Terugkerende taken ───────────────────────────────────────────────────────

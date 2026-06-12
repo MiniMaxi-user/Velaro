@@ -101,3 +101,35 @@ export async function markNotesAsRead(horseId: string) {
     )
   )
 }
+
+export async function createAnnouncement(stableId: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const role = await getStableRole(user.id, stableId)
+  if (role !== 'OWNER') throw new Error('Alleen staleigenaren kunnen stalberichten plaatsen')
+
+  const message = (formData.get('message') as string)?.trim()
+  if (!message) return { error: 'Bericht is verplicht' }
+
+  await prisma.stableAnnouncement.create({
+    data: { stableId, authorId: user.id, message },
+  })
+  revalidatePath('/stal')
+}
+
+export async function deleteAnnouncement(id: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const ann = await prisma.stableAnnouncement.findUnique({ where: { id } })
+  if (!ann) throw new Error('Stalbericht niet gevonden')
+
+  const role = await getStableRole(user.id, ann.stableId)
+  if (role !== 'OWNER') throw new Error('Geen toegang')
+
+  await prisma.stableAnnouncement.delete({ where: { id } })
+  revalidatePath('/stal')
+}

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getHorsesForOwner } from '@/features/paarden/queries'
-import { getNotesForHorse, getUnreadCountForOwner } from '@/features/mededelingen/queries'
+import { getNotesForHorse, getUnreadCountForOwner, getAnnouncementsForHorse } from '@/features/mededelingen/queries'
 import { getZorgActiesVoorPaard } from '@/features/gezondheid/queries'
 import { berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 
@@ -13,10 +13,11 @@ export default async function EigenaarPage() {
   const horses = await getHorsesForOwner(user.id)
 
   // Laad de laatste 2 mededelingen, ongelezen-tellers en zorgacties per paard parallel
-  const [notesPerPaard, ongelezen, zorgActiesPerPaard] = await Promise.all([
+  const [notesPerPaard, ongelezen, zorgActiesPerPaard, announcementsPerPaard] = await Promise.all([
     Promise.all(horses.map((h) => getNotesForHorse(h.id, 2))),
     Promise.all(horses.map((h) => getUnreadCountForOwner(user.id, h.id))),
     Promise.all(horses.map((h) => getZorgActiesVoorPaard(h.id, 60))),
+    Promise.all(horses.map((h) => getAnnouncementsForHorse(h.id, 3))),
   ])
 
   return (
@@ -43,6 +44,7 @@ export default async function EigenaarPage() {
             const leeftijd = horse.dateOfBirth ? berekenLeeftijd(new Date(horse.dateOfBirth)) : null
             const notes = notesPerPaard[index]
             const zorgActies = zorgActiesPerPaard[index]
+            const announcements = announcementsPerPaard[index]
             const verlopenActies = zorgActies.filter((a) => a.isVerlopen)
 
             return (
@@ -73,6 +75,24 @@ export default async function EigenaarPage() {
                   </Link>
                 </div>
                 <div className="panel-body">
+                  {announcements.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div className="label" style={{ marginBottom: 8 }}>Stalberichten</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {announcements.map((a) => (
+                          <div key={a.id} className="note-item">
+                            <div className="note-item__header">
+                              <span className="note-item__date">
+                                {formatDatum(new Date(a.createdAt))}
+                              </span>
+                            </div>
+                            <div className="note-item__message">{a.message}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="label" style={{ marginBottom: 8 }}>Laatste mededelingen</div>
                   {notes.length === 0 ? (
                     <p style={{ color: 'var(--velaro-color-muted)', fontSize: '0.875rem' }}>

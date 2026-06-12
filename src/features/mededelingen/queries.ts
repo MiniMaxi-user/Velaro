@@ -24,3 +24,21 @@ export async function getUnreadCountForOwner(userId: string, horseId: string) {
   })
   return { totaal, ongelezen }
 }
+
+export async function getAnnouncementsForStable(stableId: string, limit = 5) {
+  return prisma.stableAnnouncement.findMany({
+    where: { stableId },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    include: { author: { select: { name: true, email: true } } },
+  })
+}
+
+export async function getAnnouncementsForHorse(horseId: string, limit = 3) {
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { stableId: true },
+  })
+  if (!horse) return []
+  return getAnnouncementsForStable(horse.stableId, limit)
+}

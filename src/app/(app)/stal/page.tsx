@@ -6,6 +6,8 @@ import { getTaskCountsForDate } from '@/features/taken/queries'
 import { getStableRole, canCreateStable, isPlatformAdmin, getMemberships } from '@/lib/auth/authorization'
 import { getAankomendGezondheidActies } from '@/features/gezondheid/queries'
 import AankomendZorgPanel from '@/features/gezondheid/AankomendZorgPanel'
+import { getAnnouncementsForStable } from '@/features/mededelingen/queries'
+import StalbrichtPanel from '@/features/mededelingen/StalbrichtPanel'
 import { prisma } from '@/lib/prisma'
 import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
 
@@ -190,11 +192,12 @@ export default async function StalPage() {
   }
 
   const today = new Date()
-  const [horses, role, takenVandaag, zorgActies] = await Promise.all([
+  const [horses, role, takenVandaag, zorgActies, announcements] = await Promise.all([
     getHorsesForStable(stable.id),
     getStableRole(user.id, stable.id),
     getTaskCountsForDate(stable.id, today),
     getAankomendGezondheidActies(stable.id, 30),
+    getAnnouncementsForStable(stable.id, 5),
   ])
 
   const isOwner = role === 'OWNER'
@@ -362,6 +365,15 @@ export default async function StalPage() {
       {/* Aankomende zorg */}
       {role !== null && (
         <AankomendZorgPanel acties={zorgActies} />
+      )}
+
+      {/* Stalberichten */}
+      {role !== null && (
+        <StalbrichtPanel
+          stableId={stable.id}
+          announcements={announcements}
+          isOwner={isOwner}
+        />
       )}
 
       {/* Stalbewoners */}
