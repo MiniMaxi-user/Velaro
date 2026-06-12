@@ -9,12 +9,9 @@ import AankomendZorgPanel from '@/features/gezondheid/AankomendZorgPanel'
 import { getMessagesForStable } from '@/features/berichten/queries'
 import { markMessagesRead } from '@/features/berichten/actions'
 import BerichtenPanel from '@/features/berichten/BerichtenPanel'
+import { getHorseOwnersForStable } from '@/features/stal/queries'
 import { prisma } from '@/lib/prisma'
 import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
-
-function toDateParam(d: Date) {
-  return d.toISOString().slice(0, 10)
-}
 
 export default async function StalPage() {
   const user = await getAuthUser()
@@ -193,12 +190,13 @@ export default async function StalPage() {
   }
 
   const today = new Date()
-  const [horses, role, takenVandaag, zorgActies, berichten] = await Promise.all([
+  const [horses, role, takenVandaag, zorgActies, berichten, paardeigenaren] = await Promise.all([
     getHorsesForStable(stable.id),
     getStableRole(user.id, stable.id),
     getTaskCountsForDate(stable.id, today),
     getAankomendGezondheidActies(stable.id, 30),
     getMessagesForStable(stable.id, 10),
+    getHorseOwnersForStable(stable.id),
   ])
 
   const isOwner = role === 'OWNER'
@@ -296,117 +294,87 @@ export default async function StalPage() {
             </div>
           </div>
         )}
-        {role !== null && (
-          <div className="kpi-card">
-            <div className={`kpi-card-icon ${verlopenZorg > 0 ? 'amber' : 'success'}`}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 3v5l3 3" stroke={verlopenZorg > 0 ? 'var(--velaro-color-warning)' : 'var(--velaro-color-success)'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="9" cy="9" r="7" stroke={verlopenZorg > 0 ? 'var(--velaro-color-warning)' : 'var(--velaro-color-success)'} strokeWidth="1.4"/>
-              </svg>
-            </div>
-            <div className="kpi-card-body">
-              <div className="kpi-card-value" style={verlopenZorg > 0 ? { color: 'var(--velaro-color-warning)' } : undefined}>
-                {verlopenZorg > 0 ? verlopenZorg : zorgActies.length}
-              </div>
-              <div className="kpi-card-label">
-                {verlopenZorg > 0 ? 'Verlopen zorg' : 'Aankomende zorg (30d)'}
-              </div>
-              <div className={`kpi-card-trend ${verlopenZorg > 0 ? 'down' : 'flat'}`}>
-                {verlopenZorg > 0 ? `▼ ${verlopenZorg} verlopen` : 'komende 30 dagen'}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Quick actions */}
-      <div>
-        <div style={{ marginBottom: 10 }}>
-          <span className="label">Snelle acties</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px,1fr))', gap: 14 }}>
-          <Link href={`/stal/taken?datum=${toDateParam(today)}`} className="stal-actie-kaart">
-            <div className="stal-actie-kaart__icon">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M4 10l5 5 7-8" stroke="var(--velaro-color-gold-2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="stal-actie-kaart__tekst">
-              <div className="stal-actie-kaart__titel">Taken vandaag</div>
-              <div className="stal-actie-kaart__sub">
-                {openTaken > 0 ? `${openTaken} openstaand` : 'Alles gedaan'}
-              </div>
-            </div>
-          </Link>
-          <Link href="/paarden" className="stal-actie-kaart">
-            <div className="stal-actie-kaart__icon">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <ellipse cx="10" cy="12" rx="7" ry="4" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4"/>
-                <path d="M7 12c0-3 1-6 3-6s3 3 3 6" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="stal-actie-kaart__tekst">
-              <div className="stal-actie-kaart__titel">Paarden</div>
-              <div className="stal-actie-kaart__sub">{horses.length} in de stal</div>
-            </div>
-          </Link>
-          {isOwner && (
-            <Link href="/stal/leden" className="stal-actie-kaart">
-              <div className="stal-actie-kaart__icon">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <circle cx="8" cy="7" r="3" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4"/>
-                  <path d="M3 18c0-3 2-5 5-5h4" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4" strokeLinecap="round"/>
-                  <path d="M15 12v6M12 15h6" stroke="var(--velaro-color-gold-2)" strokeWidth="1.4" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <div className="stal-actie-kaart__tekst">
-                <div className="stal-actie-kaart__titel">Team</div>
-                <div className="stal-actie-kaart__sub">Beheer medewerkers</div>
-              </div>
-            </Link>
+      {/* 70/30 overzicht: links berichten + zorg, rechts stalbewoners + paardeigenaren */}
+      <div className="stal-overzicht">
+        <div className="stal-overzicht__hoofd">
+          {/* Stalberichten (50%) */}
+          {role !== null ? (
+            <BerichtenPanel
+              target={{ stableId: stable.id }}
+              title="Stalberichten"
+              messages={berichten}
+              canManage={isOwner}
+              emptyLabel="Nog geen stalberichten."
+            />
+          ) : (
+            <span />
           )}
+
+          {/* Aankomende zorg (50%) */}
+          {role !== null && <AankomendZorgPanel acties={zorgActies} />}
+        </div>
+
+        <div className="stal-overzicht__zij">
+          {/* Stalbewoners */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Stalbewoners</span>
+              <span className="badge badge-neutral">{horses.length}</span>
+            </div>
+            <div className="panel-body">
+              {horses.length === 0 ? (
+                <p style={{ color: 'var(--velaro-color-muted)', fontSize: 'var(--velaro-text-sm)', margin: 0 }}>
+                  Nog geen paarden in deze stal.
+                </p>
+              ) : (
+                <div className="stal-lijst">
+                  {horses.map((horse) => (
+                    <Link key={horse.id} href={`/paarden/${horse.id}`} className="stal-lijst__item">
+                      <div style={{ minWidth: 0 }}>
+                        <div className="stal-lijst__naam">{horse.name}</div>
+                        <div className="stal-lijst__sub">
+                          {[horse.breed, horse.discipline].filter(Boolean).join(' · ') || 'Geen verdere gegevens'}
+                        </div>
+                      </div>
+                      {horse.boxNumber && (
+                        <span className="badge badge-neutral" style={{ flexShrink: 0 }}>Box {horse.boxNumber}</span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Paardeigenaren */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Paardeigenaren</span>
+              <span className="badge badge-neutral">{paardeigenaren.length}</span>
+            </div>
+            <div className="panel-body">
+              {paardeigenaren.length === 0 ? (
+                <p style={{ color: 'var(--velaro-color-muted)', fontSize: 'var(--velaro-text-sm)', margin: 0 }}>
+                  Nog geen paardeneigenaren gekoppeld.
+                </p>
+              ) : (
+                <div className="stal-lijst">
+                  {paardeigenaren.map((eigenaar) => (
+                    <div key={eigenaar.id} className="stal-lijst__item">
+                      <div style={{ minWidth: 0 }}>
+                        <div className="stal-lijst__naam">{eigenaar.name ?? eigenaar.email}</div>
+                        <div className="stal-lijst__sub">{eigenaar.horses.join(' · ')}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Aankomende zorg */}
-      {role !== null && (
-        <AankomendZorgPanel acties={zorgActies} />
-      )}
-
-      {/* Stalberichten */}
-      {role !== null && (
-        <BerichtenPanel
-          target={{ stableId: stable.id }}
-          title="Stalberichten"
-          messages={berichten}
-          canManage={isOwner}
-          emptyLabel="Nog geen stalberichten."
-        />
-      )}
-
-      {/* Stalbewoners */}
-      {horses.length > 0 && (
-        <div>
-          <div style={{ marginBottom: 10 }}>
-            <span className="label">Stalbewoners</span>
-          </div>
-          <div className="paard-kaart-grid">
-            {horses.map((horse) => (
-              <Link key={horse.id} href={`/paarden/${horse.id}`} className="paard-kaart">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div className="paard-kaart__naam">{horse.name}</div>
-                  {horse.boxNumber && (
-                    <span className="badge badge-neutral" style={{ marginLeft: 8, flexShrink: 0 }}>Box {horse.boxNumber}</span>
-                  )}
-                </div>
-                <div className="paard-kaart__meta">
-                  {[horse.breed, horse.discipline].filter(Boolean).join(' · ') || 'Geen verdere gegevens'}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   )
 }

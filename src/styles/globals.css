@@ -1009,6 +1009,62 @@ a { color: inherit; text-decoration: none; }
 .panel-title { font-size: var(--velaro-text-sm); font-weight: 600; color: var(--velaro-color-navy); letter-spacing: 0.2px; }
 .panel-body { padding: 18px; }
 
+/* STAL DASHBOARD: 70/30 layout */
+.stal-overzicht {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.stal-overzicht__hoofd {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.stal-overzicht__zij {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Compacte lijst in zijpanelen (stalbewoners / paardeigenaren) */
+.stal-lijst { display: flex; flex-direction: column; }
+
+.stal-lijst__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--velaro-color-border);
+  text-decoration: none;
+  color: inherit;
+}
+
+.stal-lijst__item:last-child { border-bottom: none; }
+.stal-lijst__item:hover .stal-lijst__naam { color: var(--velaro-color-gold-2); }
+
+.stal-lijst__naam {
+  font-size: var(--velaro-text-sm);
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+  transition: color 0.15s;
+}
+
+.stal-lijst__sub {
+  font-size: 12px;
+  color: var(--velaro-color-muted);
+  margin-top: 1px;
+}
+
+@media (max-width: 1024px) {
+  .stal-overzicht { grid-template-columns: 1fr; }
+  .stal-overzicht__hoofd { grid-template-columns: 1fr; }
+}
+
 /* DATA GRID */
 .data-grid-wrapper {
   background: var(--velaro-color-surf-1);
