@@ -1149,6 +1149,18 @@ a { color: inherit; text-decoration: none; }
   align-items: start;
 }
 
+/* DETAIL TAB-LAYOUT (stalleden): 70% tabs / 30% vaste contextkolom */
+.detail-tabs-layout {
+  display: grid;
+  grid-template-columns: 70% 30%;
+  gap: 20px;
+  align-items: start;
+}
+
+.detail-tabs-layout > :last-child {
+  min-width: 0;
+}
+
 .detail-header {
   background: var(--velaro-color-surf-1);
   border: 1px solid var(--velaro-color-border);
@@ -1420,6 +1432,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 @media (max-width: 1200px) {
   .kpi-row { grid-template-columns: repeat(2, 1fr); }
   .detail-layout { grid-template-columns: 1fr; }
+  .detail-tabs-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {

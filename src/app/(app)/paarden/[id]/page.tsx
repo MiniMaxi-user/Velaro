@@ -13,6 +13,7 @@ import { markMessagesRead } from '@/features/berichten/actions'
 import BerichtenPanel from '@/features/berichten/BerichtenPanel'
 import StalGegevensPanel from '@/features/paarden/StalGegevensPanel'
 import VoederschemaPanel from '@/features/paarden/VoederschemaPanel'
+import PaardDetailTabs from '@/features/paarden/PaardDetailTabs'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -97,12 +98,9 @@ export default async function PaardDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div className="detail-layout">
-        {/* Main column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Algemeen */}
+      {/* Herbruikbare panelen */}
+      {(() => {
+        const algemeenPanel = (
           <div className="panel">
             <div className="panel-header">
               <span className="panel-title">Algemeen</span>
@@ -124,8 +122,9 @@ export default async function PaardDetailPage({ params }: Props) {
               </div>
             </div>
           </div>
+        )
 
-          {/* Identificatie */}
+        const identificatiePanel = (
           <div className="panel">
             <div className="panel-header">
               <span className="panel-title">Identificatie</span>
@@ -138,53 +137,23 @@ export default async function PaardDetailPage({ params }: Props) {
               </div>
             </div>
           </div>
+        )
 
-          {/* Afstamming */}
-          {(horse.sireName || horse.damName) && (
-            <div className="panel">
-              <div className="panel-header">
-                <span className="panel-title">Afstamming</span>
-              </div>
-              <div className="panel-body">
-                <div className="detail-fields">
-                  <Veld label="Vader" waarde={horse.sireName} />
-                  <Veld label="Moeder" waarde={horse.damName} />
-                </div>
+        const afstammingPanel = (horse.sireName || horse.damName) ? (
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Afstamming</span>
+            </div>
+            <div className="panel-body">
+              <div className="detail-fields">
+                <Veld label="Vader" waarde={horse.sireName} />
+                <Veld label="Moeder" waarde={horse.damName} />
               </div>
             </div>
-          )}
+          </div>
+        ) : null
 
-          {/* Voederschema (rantsoenkaart) */}
-          <VoederschemaPanel horseId={id} plan={voederschema} canEdit={canEdit} />
-
-          {/* Gezondheid (Vaccinaties / Ontworming / Dierenarts / Hoefsmit) */}
-          <GezondheidTabs
-            horseId={id}
-            vaccinaties={vaccinaties}
-            ontwormingen={ontwormingen}
-            bezzoeken={bezzoeken}
-            hoefsmitBezoeKen={hoefsmitBezoeKen}
-            canEdit={canEdit}
-          />
-
-          {/* Berichten */}
-          <BerichtenPanel
-            target={{ horseId: id }}
-            title="Berichten"
-            messages={berichten}
-            canManage={role === 'OWNER'}
-            emptyLabel="Nog geen berichten voor dit paard."
-          />
-
-        </div>
-
-        {/* Side panel */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Stalgegevens (voor paardeneigenaren) */}
-          <StalGegevensPanel stable={horse.stable} />
-
-          {/* Welzijn */}
+        const welzijnPanel = (
           <div className="panel">
             <div className="panel-header">
               <span className="panel-title">Welzijn / EU</span>
@@ -210,21 +179,90 @@ export default async function PaardDetailPage({ params }: Props) {
               )}
             </div>
           </div>
+        )
 
-          {/* Eigenaren */}
-          {canEdit && (
-            <div className="panel">
-              <div className="panel-header">
-                <span className="panel-title">Eigenaren</span>
-              </div>
-              <div className="panel-body">
-                <EigenaarBeheer horseId={id} owners={horse.owners} />
+        const voederschemaPanel = (
+          <VoederschemaPanel horseId={id} plan={voederschema} canEdit={canEdit} />
+        )
+
+        const gezondheidPanel = (
+          <GezondheidTabs
+            horseId={id}
+            vaccinaties={vaccinaties}
+            ontwormingen={ontwormingen}
+            bezzoeken={bezzoeken}
+            hoefsmitBezoeKen={hoefsmitBezoeKen}
+            canEdit={canEdit}
+          />
+        )
+
+        const berichtenPanel = (
+          <BerichtenPanel
+            target={{ horseId: id }}
+            title="Berichten"
+            messages={berichten}
+            canManage={role === 'OWNER'}
+            emptyLabel="Nog geen berichten voor dit paard."
+          />
+        )
+
+        // Stalleden (OWNER/STAFF): tab-layout met vaste contextkolom rechts.
+        if (canEdit) {
+          return (
+            <div className="detail-tabs-layout">
+              {/* Linkerkolom (70%) — tabstrip */}
+              <PaardDetailTabs
+                algemeen={
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {algemeenPanel}
+                    {afstammingPanel}
+                  </div>
+                }
+                gezondheid={gezondheidPanel}
+                eigenaren={
+                  <div className="panel">
+                    <div className="panel-header">
+                      <span className="panel-title">Eigenaren</span>
+                    </div>
+                    <div className="panel-body">
+                      <EigenaarBeheer horseId={id} owners={horse.owners} />
+                    </div>
+                  </div>
+                }
+                voederschema={voederschemaPanel}
+                berichten={berichtenPanel}
+              />
+
+              {/* Rechterkolom (30%) — altijd zichtbaar */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {identificatiePanel}
+                {welzijnPanel}
               </div>
             </div>
-          )}
+          )
+        }
 
-        </div>
-      </div>
+        // Paardeneigenaar (canEdit === false): ongewijzigde weergave.
+        return (
+          <div className="detail-layout">
+            {/* Main column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {algemeenPanel}
+              {identificatiePanel}
+              {afstammingPanel}
+              {voederschemaPanel}
+              {gezondheidPanel}
+              {berichtenPanel}
+            </div>
+
+            {/* Side panel */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <StalGegevensPanel stable={horse.stable} />
+              {welzijnPanel}
+            </div>
+          </div>
+        )
+      })()}
     </>
   )
 }

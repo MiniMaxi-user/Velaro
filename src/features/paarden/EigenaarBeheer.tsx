@@ -61,6 +61,16 @@ export default function EigenaarBeheer({ horseId, owners }: {
                 <td>{o.user.name ?? '—'}</td>
                 <td className="gezondheid-tabel__muted">{o.user.email}</td>
                 <td className="gezondheid-tabel__acties">
+                  <Link
+                    href={`/paarden/${horseId}/eigenaren/${o.id}/bewerken`}
+                    className="btn-ghost btn-ghost--sm"
+                    title={`Gegevens van ${o.user.name ?? o.user.email} bewerken`}
+                    aria-label="Eigenaar bewerken"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                    </svg>
+                  </Link>
                   <button
                     type="button"
                     className="btn-danger btn-danger--sm"
