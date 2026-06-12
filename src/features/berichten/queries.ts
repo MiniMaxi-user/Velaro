@@ -13,6 +13,17 @@ export async function getMessagesForStable(stableId: string, limit = 20) {
   })
 }
 
+/** Stalberichten van meerdere stallen (modus 'Alle stallen'), nieuwste eerst. */
+export async function getMessagesForStables(stableIds: string[], limit = 20) {
+  if (stableIds.length === 0) return []
+  return prisma.message.findMany({
+    where: { stableId: { in: stableIds } },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    include: { author: authorSelect, stable: { select: { name: true } } },
+  })
+}
+
 /** Berichten van één paard (paardberichten), nieuwste eerst. */
 export async function getMessagesForHorse(horseId: string, limit = 20) {
   return prisma.message.findMany({

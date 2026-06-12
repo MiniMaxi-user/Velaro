@@ -6,10 +6,10 @@ import { getTaskCountsForDate } from '@/features/taken/queries'
 import { getStableRole, canCreateStable, isPlatformAdmin, getMemberships } from '@/lib/auth/authorization'
 import { getAankomendGezondheidActies } from '@/features/gezondheid/queries'
 import AankomendZorgPanel from '@/features/gezondheid/AankomendZorgPanel'
-import { getMessagesForStable } from '@/features/berichten/queries'
+import { getMessagesForStable, getMessagesForStables } from '@/features/berichten/queries'
 import { markMessagesRead } from '@/features/berichten/actions'
 import BerichtenPanel from '@/features/berichten/BerichtenPanel'
-import { getHorseOwnersForStable } from '@/features/stal/queries'
+import { getHorseOwnersForStable, getHorseOwnersForStables } from '@/features/stal/queries'
 import { prisma } from '@/lib/prisma'
 import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
 
@@ -24,7 +24,8 @@ export default async function StalPage() {
   const activeStableId = await getActiveStableId(user.id)
   const alleStallen = activeStableId === ALLE_STALLEN
 
-  // Modus: alle stallen van de gebruiker
+  // Modus: alle stallen van de gebruiker — zelfde layout als de stalpagina,
+  // maar met de geaggregeerde data van alle stallen waar de gebruiker lid van is.
   if (alleStallen) {
     const memberships = await getMemberships(user.id)
     if (memberships.length === 0) redirect('/eigenaar')
@@ -34,13 +35,15 @@ export default async function StalPage() {
     const hour = today.getHours()
     const begroeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond'
 
-    const [horses, takenCounts, zorgActiesPerStal] = await Promise.all([
+    const [horses, takenCounts, zorgActiesPerStal, berichten, paardeigenaren] = await Promise.all([
       prisma.horse.findMany({
         where: { stableId: { in: stableIds } },
         orderBy: { name: 'asc' },
       }),
       Promise.all(stableIds.map((id) => getTaskCountsForDate(id, today))),
       Promise.all(stableIds.map((id) => getAankomendGezondheidActies(id, 30))),
+      getMessagesForStables(stableIds, 10),
+      getHorseOwnersForStables(stableIds),
     ])
 
     const takenVandaag = takenCounts.reduce(
@@ -57,6 +60,7 @@ export default async function StalPage() {
 
     return (
       <>
+        {/* Page header */}
         <div className="page-header">
           <div className="page-header-left">
             <div className="breadcrumb">
@@ -69,6 +73,7 @@ export default async function StalPage() {
           </div>
         </div>
 
+        {/* KPI cards */}
         <div className="kpi-row">
           <div className="kpi-card">
             <div className="kpi-card-icon">🐴</div>
@@ -132,30 +137,81 @@ export default async function StalPage() {
           </div>
         </div>
 
-        <AankomendZorgPanel acties={zorgActies} />
+        {/* 70/30 overzicht: links berichten + zorg, rechts stalbewoners + paardeigenaren */}
+        <div className="stal-overzicht">
+          <div className="stal-overzicht__hoofd">
+            {/* Stalberichten (50%) — alleen-lezen: nieuw bericht plaatsen vereist een specifieke stal */}
+            <BerichtenPanel
+              target={{ stableId: stableIds[0] }}
+              title="Stalberichten"
+              messages={berichten}
+              canManage={false}
+              emptyLabel="Nog geen stalberichten."
+            />
 
-        {horses.length > 0 && (
-          <div>
-            <div style={{ marginBottom: 10 }}>
-              <span className="label">Stalbewoners — alle stallen</span>
+            {/* Aankomende zorg (50%) */}
+            <AankomendZorgPanel acties={zorgActies} />
+          </div>
+
+          <div className="stal-overzicht__zij">
+            {/* Stalbewoners */}
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Stalbewoners</span>
+                <span className="badge badge-neutral">{horses.length}</span>
+              </div>
+              <div className="panel-body">
+                {horses.length === 0 ? (
+                  <p style={{ color: 'var(--velaro-color-muted)', fontSize: 'var(--velaro-text-sm)', margin: 0 }}>
+                    Nog geen paarden in jouw stallen.
+                  </p>
+                ) : (
+                  <div className="stal-lijst">
+                    {horses.map((horse) => (
+                      <Link key={horse.id} href={`/paarden/${horse.id}`} className="stal-lijst__item">
+                        <div style={{ minWidth: 0 }}>
+                          <div className="stal-lijst__naam">{horse.name}</div>
+                          <div className="stal-lijst__sub">
+                            {[horse.breed, horse.discipline].filter(Boolean).join(' · ') || 'Geen verdere gegevens'}
+                          </div>
+                        </div>
+                        {horse.boxNumber && (
+                          <span className="badge badge-neutral" style={{ flexShrink: 0 }}>Box {horse.boxNumber}</span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="paard-kaart-grid">
-              {horses.map((horse) => (
-                <Link key={horse.id} href={`/paarden/${horse.id}`} className="paard-kaart">
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div className="paard-kaart__naam">{horse.name}</div>
-                    {horse.boxNumber && (
-                      <span className="badge badge-neutral" style={{ marginLeft: 8, flexShrink: 0 }}>Box {horse.boxNumber}</span>
-                    )}
+
+            {/* Paardeigenaren */}
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Paardeigenaren</span>
+                <span className="badge badge-neutral">{paardeigenaren.length}</span>
+              </div>
+              <div className="panel-body">
+                {paardeigenaren.length === 0 ? (
+                  <p style={{ color: 'var(--velaro-color-muted)', fontSize: 'var(--velaro-text-sm)', margin: 0 }}>
+                    Nog geen paardeneigenaren gekoppeld.
+                  </p>
+                ) : (
+                  <div className="stal-lijst">
+                    {paardeigenaren.map((eigenaar) => (
+                      <div key={eigenaar.id} className="stal-lijst__item">
+                        <div style={{ minWidth: 0 }}>
+                          <div className="stal-lijst__naam">{eigenaar.name ?? eigenaar.email}</div>
+                          <div className="stal-lijst__sub">{eigenaar.horses.join(' · ')}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="paard-kaart__meta">
-                    {[horse.breed, horse.discipline].filter(Boolean).join(' · ') || 'Geen verdere gegevens'}
-                  </div>
-                </Link>
-              ))}
+                )}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </>
     )
   }

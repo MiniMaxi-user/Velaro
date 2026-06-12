@@ -26,8 +26,17 @@ export interface Paardeigenaar {
  * paarden die zij in deze stal hebben. Gesorteerd op naam.
  */
 export async function getHorseOwnersForStable(stableId: string): Promise<Paardeigenaar[]> {
+  return getHorseOwnersForStables([stableId])
+}
+
+/**
+ * Zelfde als getHorseOwnersForStable, maar voor meerdere stallen tegelijk
+ * (modus 'Alle stallen'). Paardnamen van dezelfde eigenaar worden samengevoegd.
+ */
+export async function getHorseOwnersForStables(stableIds: string[]): Promise<Paardeigenaar[]> {
+  if (stableIds.length === 0) return []
   const ownerships = await prisma.horseOwner.findMany({
-    where: { horse: { stableId } },
+    where: { horse: { stableId: { in: stableIds } } },
     include: {
       user: { select: { id: true, name: true, email: true } },
       horse: { select: { name: true } },
