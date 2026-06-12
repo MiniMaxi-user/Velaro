@@ -21,6 +21,10 @@ export async function getHorsesForStable(stableId: string) {
   })
 }
 
+export async function getFeedingPlan(horseId: string) {
+  return prisma.feedingPlan.findUnique({ where: { horseId } })
+}
+
 export async function getHorse(id: string) {
   return prisma.horse.findUnique({
     where: { id },

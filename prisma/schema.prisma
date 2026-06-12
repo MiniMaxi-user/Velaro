@@ -134,6 +134,7 @@ model Horse {
   tasks           Task[]
   messages        Message[]
   recurringTasks  RecurringTask[]
+  feedingPlan     FeedingPlan?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -304,6 +305,25 @@ model HoefsmitBezoek {
   createdAt DateTime  @default(now())
 
   @@index([horseId])
+}
+
+// ── Voederschema (rantsoenkaart) ─────────────────────────────────────────────
+// Eén-op-één met Horse: precies één voederschema per paard. Bewust vrije
+// tekstvelden, simpel voor de MVP. Staf/eigenaar van de stal mag schrijven;
+// paardeneigenaar mag alleen lezen.
+
+model FeedingPlan {
+  id           String   @id @default(uuid()) @db.Uuid
+  horseId      String   @unique @db.Uuid
+  roughage     String? // ruwvoer (bv. 3x daags hooi)
+  concentrate  String? // krachtvoer (bv. 2 scheppen muesli ochtend en avond)
+  supplements  String? // supplementen
+  restrictions String? // beperkingen/allergie (bv. geen suikerrijk voer)
+  notes        String? // overige opmerkingen
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
 }
 
 // ── Zorgtype enum ─────────────────────────────────────────────────────────────

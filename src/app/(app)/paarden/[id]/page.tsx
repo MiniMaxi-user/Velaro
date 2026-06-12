@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
-import { getHorse } from '@/features/paarden/queries'
+import { getHorse, getFeedingPlan } from '@/features/paarden/queries'
 import { getStableRole, canViewHorse } from '@/lib/auth/authorization'
 import { GESLACHT_LABELS, berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 import DeletePaardButton from '@/features/paarden/DeletePaardButton'
@@ -12,6 +12,7 @@ import { getMessagesForHorse } from '@/features/berichten/queries'
 import { markMessagesRead } from '@/features/berichten/actions'
 import BerichtenPanel from '@/features/berichten/BerichtenPanel'
 import StalGegevensPanel from '@/features/paarden/StalGegevensPanel'
+import VoederschemaPanel from '@/features/paarden/VoederschemaPanel'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -35,7 +36,7 @@ export default async function PaardDetailPage({ params }: Props) {
   const horse = await getHorse(id)
   if (!horse) notFound()
 
-  const [canView, role, vaccinaties, ontwormingen, bezzoeken, hoefsmitBezoeKen, berichten] = await Promise.all([
+  const [canView, role, vaccinaties, ontwormingen, bezzoeken, hoefsmitBezoeKen, berichten, voederschema] = await Promise.all([
     canViewHorse(user.id, id),
     getStableRole(user.id, horse.stableId),
     getVaccinaties(id),
@@ -43,6 +44,7 @@ export default async function PaardDetailPage({ params }: Props) {
     getDierenartsBezzoeken(id),
     getHoefsmitBezoeKen(id),
     getMessagesForHorse(id),
+    getFeedingPlan(id),
   ])
 
   if (!canView) notFound()
@@ -151,6 +153,9 @@ export default async function PaardDetailPage({ params }: Props) {
               </div>
             </div>
           )}
+
+          {/* Voederschema (rantsoenkaart) */}
+          <VoederschemaPanel horseId={id} plan={voederschema} canEdit={canEdit} />
 
           {/* Gezondheid (Vaccinaties / Ontworming / Dierenarts / Hoefsmit) */}
           <GezondheidTabs

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
-import { getHorsesForOwner } from '@/features/paarden/queries'
+import { getHorsesForOwner, getFeedingPlan } from '@/features/paarden/queries'
 import { getMessagesForHorseView, getUnreadCountForHorseView } from '@/features/berichten/queries'
 import BerichtItem from '@/features/berichten/BerichtItem'
 import { getZorgActiesVoorPaard } from '@/features/gezondheid/queries'
@@ -14,10 +14,11 @@ export default async function EigenaarPage() {
   const horses = await getHorsesForOwner(user.id)
 
   // Laad berichten (stal + paard), ongelezen-tellers en zorgacties per paard parallel
-  const [berichtenPerPaard, ongelezenPerPaard, zorgActiesPerPaard] = await Promise.all([
+  const [berichtenPerPaard, ongelezenPerPaard, zorgActiesPerPaard, voederschemaPerPaard] = await Promise.all([
     Promise.all(horses.map((h) => getMessagesForHorseView(h.id, 6))),
     Promise.all(horses.map((h) => getUnreadCountForHorseView(user.id, h.id))),
     Promise.all(horses.map((h) => getZorgActiesVoorPaard(h.id, 60))),
+    Promise.all(horses.map((h) => getFeedingPlan(h.id))),
   ])
 
   return (
@@ -45,6 +46,14 @@ export default async function EigenaarPage() {
             const berichten = berichtenPerPaard[index]
             const zorgActies = zorgActiesPerPaard[index]
             const verlopenActies = zorgActies.filter((a) => a.isVerlopen)
+            const voederschema = voederschemaPerPaard[index]
+            const voederVelden: { label: string; waarde: string | null; benadruk?: boolean }[] = [
+              { label: 'Ruwvoer', waarde: voederschema?.roughage ?? null },
+              { label: 'Krachtvoer', waarde: voederschema?.concentrate ?? null },
+              { label: 'Supplementen', waarde: voederschema?.supplements ?? null },
+              { label: 'Beperkingen', waarde: voederschema?.restrictions ?? null, benadruk: true },
+              { label: 'Opmerkingen', waarde: voederschema?.notes ?? null },
+            ].filter((v) => v.waarde)
 
             return (
               <div key={horse.id} className="panel">
@@ -121,6 +130,32 @@ export default async function EigenaarPage() {
                               {actie.type === 'vaccinatie' ? 'Vaccinatie' : actie.type === 'ontworming' ? 'Ontworming' : 'Hoefsmit'}
                               {actie.omschrijving ? ` — ${actie.omschrijving}` : ''}
                             </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {voederVelden.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 16,
+                        paddingTop: 16,
+                        borderTop: '1px solid var(--velaro-color-border)',
+                      }}
+                    >
+                      <div className="label" style={{ marginBottom: 8 }}>Voederschema</div>
+                      <div className="detail-fields">
+                        {voederVelden.map((v) => (
+                          <div key={v.label} className="detail-field">
+                            <div className="detail-field-label">{v.label}</div>
+                            <div className="detail-field-value">
+                              {v.benadruk ? (
+                                <span className="badge badge-danger">{v.waarde}</span>
+                              ) : (
+                                v.waarde
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>

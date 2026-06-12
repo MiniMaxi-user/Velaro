@@ -190,6 +190,37 @@ export async function createAndLinkEigenaar(
   redirect(`/paarden/${horseId}`)
 }
 
+export async function saveFeedingPlan(
+  horseId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) return { error: 'Paard niet gevonden' }
+
+  const role = await getStableRole(user.id, horse.stableId)
+  if (!role) return { error: 'Geen toegang' }
+
+  const veld = (key: string) => (formData.get(key) as string)?.trim() || null
+
+  const data = {
+    roughage: veld('roughage'),
+    concentrate: veld('concentrate'),
+    supplements: veld('supplements'),
+    restrictions: veld('restrictions'),
+    notes: veld('notes'),
+  }
+
+  await prisma.feedingPlan.upsert({
+    where: { horseId },
+    create: { horseId, ...data },
+    update: data,
+  })
+
+  revalidatePath(`/paarden/${horseId}`)
+}
+
 export async function deleteHorse(id: string) {
   const user = await getCurrentUser()
 
