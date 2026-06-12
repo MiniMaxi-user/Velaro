@@ -41,6 +41,7 @@ export default function TaakItem({ task, horses }: { task: Task; horses: Horse[]
 
   function handleDelete() {
     setError(null)
+    if (!confirm('Weet je zeker dat je deze taak wilt verwijderen?')) return
     startDelete(async () => {
       try { await deleteTask(task.id) }
       catch (err) { setError(err instanceof Error ? err.message : 'Fout') }
