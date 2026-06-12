@@ -86,7 +86,8 @@ export async function GET(req: NextRequest) {
       type: 'stal',
       naam: s.name,
       sub: s.city ?? undefined,
-      url: `/stallen/${s.id}/bewerken`,
+      // Open de stal in de view (dashboard), niet in het bewerken-scherm
+      url: `/stallen/${s.id}/openen`,
     })
   }
 
