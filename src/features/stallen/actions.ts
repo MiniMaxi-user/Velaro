@@ -46,6 +46,17 @@ export async function createStable(formData: FormData) {
   redirect('/stal')
 }
 
+/**
+ * Bepaalt een veilig pad om naartoe terug te keren na een stalwissel.
+ * Alleen interne app-paden zijn toegestaan; bij twijfel valt het terug op '/stal'.
+ */
+function safeReturnTo(raw: string | null): string {
+  if (!raw) return '/stal'
+  // Moet een relatief in-app pad zijn (geen protocol-relatieve of externe URL)
+  if (!raw.startsWith('/') || raw.startsWith('//')) return '/stal'
+  return raw
+}
+
 export async function switchActiveStable(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -69,7 +80,9 @@ export async function switchActiveStable(formData: FormData) {
     path: '/',
   })
 
-  redirect('/stal')
+  // Blijf op de pagina waar de gebruiker is; alleen de data herlaadt.
+  const returnTo = safeReturnTo(formData.get('returnTo') as string | null)
+  redirect(returnTo)
 }
 
 export async function updateStable(stableId: string, formData: FormData) {

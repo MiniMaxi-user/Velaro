@@ -130,6 +130,8 @@ export default function SidebarClient({
         <div className="stalswitcher">
           <span className="stalswitcher-label">Actieve stal</span>
           <form ref={switchFormRef} action={switchActiveStable}>
+            {/* Blijf na het wisselen op de huidige pagina; alleen de data herlaadt. */}
+            <input type="hidden" name="returnTo" value={pathname} />
             <select
               name="stableId"
               defaultValue={activeStableId ?? ''}
