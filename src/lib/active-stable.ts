@@ -1,11 +1,11 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { ALLE_STALLEN, ACTIVE_STABLE_COOKIE } from '@/lib/stable-constants'
 
-const COOKIE_NAME = 'velaro-active-stable'
+export { ALLE_STALLEN }
 
-/** Schildwacht-waarde: de gebruiker heeft "Alle stallen" gekozen. */
-export const ALLE_STALLEN = 'alle'
+const COOKIE_NAME = ACTIVE_STABLE_COOKIE
 
 export const getActiveStableId = cache(async (userId: string): Promise<string | null> => {
   const cookieStore = await cookies()

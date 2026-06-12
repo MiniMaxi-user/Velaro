@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useRef } from 'react'
 import { switchActiveStable } from '@/features/stallen/actions'
-import { ALLE_STALLEN } from '@/lib/active-stable'
+import { ALLE_STALLEN } from '@/lib/stable-constants'
 
 const EIGENAAR_NAV = [
   { href: '/eigenaar', label: 'Dashboard',    icon: 'dashboard', exact: true },
