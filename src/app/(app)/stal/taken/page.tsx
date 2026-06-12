@@ -68,6 +68,12 @@ export default async function TakenPage({
     const open = allTasks.filter((t) => !t.isCompleted)
     const done = allTasks.filter((t) => t.isCompleted)
 
+    const totaalTaken = allTasks.length
+    const gedaanTaken = done.length
+    const voortgangPct = totaalTaken > 0
+      ? Math.round((gedaanTaken / totaalTaken) * 100)
+      : null
+
     return (
       <main className="page-container">
         <div className="page-header">
@@ -93,6 +99,23 @@ export default async function TakenPage({
             {next.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} →
           </Link>
         </div>
+
+        {voortgangPct !== null && (
+          <div className="taken-voortgang">
+            <div className="taken-voortgang__balk">
+              <div
+                className={`taken-voortgang__vulling${voortgangPct === 100 ? ' taken-voortgang__vulling--compleet' : ''}`}
+                style={{ width: `${voortgangPct}%` }}
+              />
+            </div>
+            <span className="taken-voortgang__label">
+              {gedaanTaken}/{totaalTaken} gedaan
+              {voortgangPct === 100
+                ? ' — alles afgerond'
+                : ` — ${voortgangPct}%`}
+            </span>
+          </div>
+        )}
 
         {allTasks.length === 0 && (
           <div className="empty-state">
@@ -165,6 +188,12 @@ export default async function TakenPage({
   const openTasks = tasks.filter((t) => !t.isCompleted)
   const doneTasks = tasks.filter((t) => t.isCompleted)
 
+  const totaalTaken = tasks.length
+  const gedaanTaken = doneTasks.length
+  const voortgangPct = totaalTaken > 0
+    ? Math.round((gedaanTaken / totaalTaken) * 100)
+    : null
+
   return (
     <main className="page-container">
       <div className="page-header">
@@ -190,6 +219,23 @@ export default async function TakenPage({
           {next.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} →
         </Link>
       </div>
+
+      {voortgangPct !== null && (
+        <div className="taken-voortgang">
+          <div className="taken-voortgang__balk">
+            <div
+              className={`taken-voortgang__vulling${voortgangPct === 100 ? ' taken-voortgang__vulling--compleet' : ''}`}
+              style={{ width: `${voortgangPct}%` }}
+            />
+          </div>
+          <span className="taken-voortgang__label">
+            {gedaanTaken}/{totaalTaken} gedaan
+            {voortgangPct === 100
+              ? ' — alles afgerond'
+              : ` — ${voortgangPct}%`}
+          </span>
+        </div>
+      )}
 
       <div style={{ marginBottom: 'var(--velaro-space-6)' }}>
         <TaakForm

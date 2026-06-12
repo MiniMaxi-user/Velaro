@@ -1816,6 +1816,41 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   color: var(--velaro-color-navy);
 }
 
+.taken-voortgang {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--velaro-space-4);
+}
+
+.taken-voortgang__balk {
+  flex: 1;
+  height: 6px;
+  background: var(--velaro-color-surf-2);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid var(--velaro-color-border);
+}
+
+.taken-voortgang__vulling {
+  height: 100%;
+  background: var(--velaro-color-gold);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.taken-voortgang__vulling--compleet {
+  background: var(--velaro-color-success);
+}
+
+.taken-voortgang__label {
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-muted);
+  white-space: nowrap;
+  min-width: 140px;
+  text-align: right;
+}
+
 .taken-datumkiezer {
   font-size: 0.8rem;
   padding: 4px 8px;
