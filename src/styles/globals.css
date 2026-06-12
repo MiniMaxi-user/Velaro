@@ -1733,19 +1733,48 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   font-weight: 500;
 }
 
-/* Volgende datum in gezondheidsoverzicht — statuskleur */
+/* Volgende datum in gezondheidsoverzicht — statuskleur + urgentie-badge */
 .gezondheid-datum {
   font-size: 12px;
   font-weight: 500;
 }
 .gezondheid-datum--verlopen {
   color: var(--velaro-color-danger);
+  background: var(--velaro-color-danger-bg);
+  border: 1px solid var(--velaro-color-danger-border);
+  border-radius: var(--velaro-radius-sm);
+  padding: 2px 6px;
+  font-weight: 600;
 }
-.gezondheid-datum--spoedig {
+.gezondheid-datum--bijna {
   color: var(--velaro-color-warning);
+  background: var(--velaro-color-warning-bg);
+  border: 1px solid var(--velaro-color-warning-border);
+  border-radius: var(--velaro-radius-sm);
+  padding: 2px 6px;
+  font-weight: 500;
 }
 .gezondheid-datum--ok {
   color: var(--velaro-color-success);
+  font-weight: 400;
+}
+
+/* Urgentie-teller op gezondheidstab */
+.gezondheid-tab-urgent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  padding: 0 4px;
+  background: var(--velaro-color-danger);
+  color: #fff;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 /* Leden tabel */

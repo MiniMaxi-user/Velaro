@@ -6,17 +6,24 @@ import type { Vaccination, Deworming, VetVisit, HoefsmitBezoek } from '@prisma/c
 import DeleteGezondheidButton from './DeleteGezondheidButton'
 import { formatDatum } from '@/features/paarden/paardHelpers'
 
-type DatumStatus = 'verlopen' | 'spoedig' | 'ok'
+type DatumStatus = 'verlopen' | 'bijna' | 'ok'
+
+const BIJNA_VERLOPEN_DAGEN = 14
 
 function getDatumStatus(nextDate: Date | null): DatumStatus | null {
   if (!nextDate) return null
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
   const grens = new Date(vandaag)
-  grens.setDate(grens.getDate() + 30)
+  grens.setDate(grens.getDate() + BIJNA_VERLOPEN_DAGEN)
   if (nextDate < vandaag) return 'verlopen'
-  if (nextDate <= grens) return 'spoedig'
+  if (nextDate <= grens) return 'bijna'
   return 'ok'
+}
+
+function isUrgent(nextDate: Date | null): boolean {
+  const status = getDatumStatus(nextDate)
+  return status === 'verlopen' || status === 'bijna'
 }
 
 function DatumBadge({ date }: { date: Date | null }) {
@@ -24,6 +31,7 @@ function DatumBadge({ date }: { date: Date | null }) {
   const status = getDatumStatus(date)
   return (
     <span className={`gezondheid-datum gezondheid-datum--${status}`}>
+      {status === 'verlopen' ? 'Verlopen — ' : ''}
       {formatDatum(date)}
     </span>
   )
@@ -50,11 +58,21 @@ export default function GezondheidTabs({
 }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('vaccinaties')
 
-  const tabs: { id: TabId; label: string; count: number }[] = [
-    { id: 'vaccinaties', label: 'Vaccinaties', count: vaccinaties.length },
-    { id: 'ontworming',  label: 'Ontworming',  count: ontwormingen.length },
-    { id: 'dierenarts',  label: 'Dierenarts',  count: bezzoeken.length },
-    { id: 'hoefsmit',   label: 'Hoefsmit',    count: hoefsmitBezoeKen.length },
+  const urgentVaccinaties = vaccinaties.filter((v) =>
+    isUrgent(v.nextDate ? new Date(v.nextDate) : null),
+  ).length
+  const urgentOntworming = ontwormingen.filter((o) =>
+    isUrgent(o.nextDate ? new Date(o.nextDate) : null),
+  ).length
+  const urgentHoefsmit = hoefsmitBezoeKen.filter((h) =>
+    isUrgent(h.nextDate ? new Date(h.nextDate) : null),
+  ).length
+
+  const tabs: { id: TabId; label: string; count: number; urgent: number }[] = [
+    { id: 'vaccinaties', label: 'Vaccinaties', count: vaccinaties.length,      urgent: urgentVaccinaties },
+    { id: 'ontworming',  label: 'Ontworming',  count: ontwormingen.length,     urgent: urgentOntworming },
+    { id: 'dierenarts',  label: 'Dierenarts',  count: bezzoeken.length,        urgent: 0 },
+    { id: 'hoefsmit',   label: 'Hoefsmit',    count: hoefsmitBezoeKen.length, urgent: urgentHoefsmit },
   ]
 
   return (
@@ -72,6 +90,11 @@ export default function GezondheidTabs({
               {tab.label}
               {tab.count > 0 && (
                 <span className="gezondheid-tab-count">{tab.count}</span>
+              )}
+              {tab.urgent > 0 && (
+                <span className="gezondheid-tab-urgent" title={`${tab.urgent} actie(s) verlopen of bijna verlopen`}>
+                  {tab.urgent}
+                </span>
               )}
             </button>
           ))}
