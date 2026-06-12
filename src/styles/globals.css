@@ -2055,39 +2055,281 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 .select--taak { max-width: 200px; }
 
 /* Mededelingen */
-.note-item {
+/* ── Berichten ── */
+.bericht-item {
   background: var(--velaro-color-surf-2);
   border: 1px solid var(--velaro-color-border);
   border-radius: 6px;
   padding: 10px 12px;
 }
 
-.note-item__header {
+.bericht-item__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bericht-item__subject {
+  font-size: var(--velaro-text-sm);
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+  word-break: break-word;
+}
+
+.bericht-item__acties {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.bericht-item__meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin: 2px 0 6px;
   flex-wrap: wrap;
 }
 
-.note-item__author {
-  font-size: var(--velaro-text-sm);
+.bericht-item__author {
+  font-size: var(--velaro-text-xs);
   font-weight: 500;
-  color: var(--velaro-color-navy);
+  color: var(--velaro-color-muted);
 }
 
-.note-item__date {
+.bericht-item__date {
   font-size: var(--velaro-text-xs);
   color: var(--velaro-color-muted);
-  margin-right: auto;
 }
 
-.note-item__message {
+.bericht-item__author + .bericht-item__date::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--velaro-color-border-strong);
+}
+
+.bericht-item__body {
   font-size: var(--velaro-text-sm);
   color: var(--velaro-color-text);
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.bericht-item--editing {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bericht-icon-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--velaro-radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--velaro-color-muted);
+  cursor: pointer;
+  transition: var(--velaro-transition);
+}
+
+.bericht-icon-btn:hover {
+  background: var(--velaro-color-surf-1);
+  border-color: var(--velaro-color-border);
+  color: var(--velaro-color-navy);
+}
+
+.bericht-icon-btn--danger:hover {
+  background: var(--velaro-color-danger-bg);
+  border-color: var(--velaro-color-danger-border);
+  color: var(--velaro-color-danger);
+}
+
+.bericht-icon-btn:disabled { opacity: 0.5; cursor: default; }
+
+.bericht-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--velaro-radius-md);
+  background: transparent;
+  border: 1px solid var(--velaro-color-border);
+  color: var(--velaro-color-navy);
+  font-family: var(--velaro-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--velaro-transition);
+}
+
+.bericht-add-btn:hover {
+  background: var(--velaro-color-surf-2);
+  border-color: var(--velaro-color-border-strong);
+}
+
+.bericht-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--velaro-color-surf-2);
+  border: 1px solid var(--velaro-color-border);
+  border-radius: 6px;
+}
+
+/* ── Meldingen-bel ── */
+.notif-menu { position: relative; }
+
+.notif-menu .topbar-icon-btn { position: relative; }
+
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--velaro-color-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: var(--velaro-color-surf-1);
+  border: 1px solid var(--velaro-color-border-strong);
+  border-radius: var(--velaro-radius-lg);
+  box-shadow: var(--velaro-shadow-lg);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  overflow: hidden;
+}
+
+.notif-menu--open .notif-dropdown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.notif-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--velaro-color-border);
+}
+
+.notif-dropdown-title {
+  font-size: var(--velaro-text-sm);
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+}
+
+.notif-markall {
+  background: transparent;
+  border: none;
+  color: var(--velaro-color-gold-2);
+  font-family: var(--velaro-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.notif-markall:hover { text-decoration: underline; }
+.notif-markall:disabled { opacity: 0.5; cursor: default; }
+
+.notif-empty {
+  padding: 22px 14px;
+  text-align: center;
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-muted);
+}
+
+.notif-list {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--velaro-color-border);
+}
+
+.notif-item:last-child { border-bottom: none; }
+
+.notif-type {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--velaro-radius-md);
+}
+
+.notif-type--stable {
+  background: var(--velaro-color-surf-2);
+  color: var(--velaro-color-navy);
+}
+
+.notif-type--horse {
+  background: var(--velaro-color-gold-soft, var(--velaro-color-surf-2));
+  color: var(--velaro-color-gold-2);
+}
+
+.notif-item__text { flex: 1; min-width: 0; }
+
+.notif-item__subject {
+  font-size: var(--velaro-text-sm);
+  font-weight: 500;
+  color: var(--velaro-color-navy);
+  word-break: break-word;
+}
+
+.notif-item__meta {
+  font-size: var(--velaro-text-xs);
+  color: var(--velaro-color-muted);
+  margin-top: 2px;
+}
+
+.notif-read-btn {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--velaro-radius-md);
+  background: transparent;
+  border: 1px solid var(--velaro-color-border);
+  color: var(--velaro-color-muted);
+  cursor: pointer;
+  transition: var(--velaro-transition);
+}
+
+.notif-read-btn:hover {
+  background: var(--velaro-color-success-bg);
+  border-color: var(--velaro-color-success-border);
+  color: var(--velaro-color-success);
+}
+
+.notif-read-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* ── Topbar zoeken ── */
 .topbar-search-wrapper {

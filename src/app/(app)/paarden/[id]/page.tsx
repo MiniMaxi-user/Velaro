@@ -8,9 +8,9 @@ import DeletePaardButton from '@/features/paarden/DeletePaardButton'
 import EigenaarBeheer from '@/features/paarden/EigenaarBeheer'
 import { getVaccinaties, getOntwormingen, getDierenartsBezzoeken, getHoefsmitBezoeKen } from '@/features/gezondheid/queries'
 import GezondheidTabs from '@/features/gezondheid/GezondheidTabs'
-import { getNotesForHorse } from '@/features/mededelingen/queries'
-import MededelingenSectie from '@/features/mededelingen/MededelingenSectie'
-import { markNotesAsRead } from '@/features/mededelingen/actions'
+import { getMessagesForHorse } from '@/features/berichten/queries'
+import { markMessagesRead } from '@/features/berichten/actions'
+import BerichtenPanel from '@/features/berichten/BerichtenPanel'
 import StalGegevensPanel from '@/features/paarden/StalGegevensPanel'
 
 interface Props {
@@ -35,22 +35,21 @@ export default async function PaardDetailPage({ params }: Props) {
   const horse = await getHorse(id)
   if (!horse) notFound()
 
-  const [canView, role, vaccinaties, ontwormingen, bezzoeken, hoefsmitBezoeKen, notes] = await Promise.all([
+  const [canView, role, vaccinaties, ontwormingen, bezzoeken, hoefsmitBezoeKen, berichten] = await Promise.all([
     canViewHorse(user.id, id),
     getStableRole(user.id, horse.stableId),
     getVaccinaties(id),
     getOntwormingen(id),
     getDierenartsBezzoeken(id),
     getHoefsmitBezoeKen(id),
-    getNotesForHorse(id),
+    getMessagesForHorse(id),
   ])
 
   if (!canView) notFound()
 
-  // Markeer mededelingen als gelezen voor paardeneigenaren
-  const isHorseOwner = !role && canView
-  if (isHorseOwner) {
-    await markNotesAsRead(id)
+  // Wie het profiel opent, heeft de paardberichten gezien.
+  if (berichten.length > 0) {
+    await markMessagesRead(berichten.map((b) => b.id))
   }
 
   const canEdit = role !== null
@@ -163,21 +162,14 @@ export default async function PaardDetailPage({ params }: Props) {
             canEdit={canEdit}
           />
 
-          {/* Mededelingen */}
-          <div className="panel">
-            <div className="panel-header">
-              <span className="panel-title">Mededelingen</span>
-            </div>
-            <div className="panel-body">
-              <MededelingenSectie
-                horseId={id}
-                notes={notes}
-                canCreate={canEdit}
-                userId={user.id}
-                isOwner={role === 'OWNER'}
-              />
-            </div>
-          </div>
+          {/* Berichten */}
+          <BerichtenPanel
+            target={{ horseId: id }}
+            title="Berichten"
+            messages={berichten}
+            canManage={role === 'OWNER'}
+            emptyLabel="Nog geen berichten voor dit paard."
+          />
 
         </div>
 

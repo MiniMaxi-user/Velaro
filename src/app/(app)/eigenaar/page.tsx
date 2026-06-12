@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getHorsesForOwner } from '@/features/paarden/queries'
-import { getNotesForHorse, getUnreadCountForOwner, getAnnouncementsForHorse } from '@/features/mededelingen/queries'
+import { getMessagesForHorseView, getUnreadCountForHorseView } from '@/features/berichten/queries'
+import BerichtItem from '@/features/berichten/BerichtItem'
 import { getZorgActiesVoorPaard } from '@/features/gezondheid/queries'
 import { berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 
@@ -12,12 +13,11 @@ export default async function EigenaarPage() {
 
   const horses = await getHorsesForOwner(user.id)
 
-  // Laad de laatste 2 mededelingen, ongelezen-tellers en zorgacties per paard parallel
-  const [notesPerPaard, ongelezen, zorgActiesPerPaard, announcementsPerPaard] = await Promise.all([
-    Promise.all(horses.map((h) => getNotesForHorse(h.id, 2))),
-    Promise.all(horses.map((h) => getUnreadCountForOwner(user.id, h.id))),
+  // Laad berichten (stal + paard), ongelezen-tellers en zorgacties per paard parallel
+  const [berichtenPerPaard, ongelezenPerPaard, zorgActiesPerPaard] = await Promise.all([
+    Promise.all(horses.map((h) => getMessagesForHorseView(h.id, 6))),
+    Promise.all(horses.map((h) => getUnreadCountForHorseView(user.id, h.id))),
     Promise.all(horses.map((h) => getZorgActiesVoorPaard(h.id, 60))),
-    Promise.all(horses.map((h) => getAnnouncementsForHorse(h.id, 3))),
   ])
 
   return (
@@ -42,9 +42,8 @@ export default async function EigenaarPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {horses.map((horse, index) => {
             const leeftijd = horse.dateOfBirth ? berekenLeeftijd(new Date(horse.dateOfBirth)) : null
-            const notes = notesPerPaard[index]
+            const berichten = berichtenPerPaard[index]
             const zorgActies = zorgActiesPerPaard[index]
-            const announcements = announcementsPerPaard[index]
             const verlopenActies = zorgActies.filter((a) => a.isVerlopen)
 
             return (
@@ -53,9 +52,9 @@ export default async function EigenaarPage() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span className="panel-title">{horse.name}</span>
-                      {ongelezen[index].ongelezen > 0 && (
+                      {ongelezenPerPaard[index] > 0 && (
                         <span className="badge badge-warning">
-                          {ongelezen[index].ongelezen} nieuw
+                          {ongelezenPerPaard[index]} nieuw
                         </span>
                       )}
                       {verlopenActies.length > 0 && (
@@ -75,43 +74,15 @@ export default async function EigenaarPage() {
                   </Link>
                 </div>
                 <div className="panel-body">
-                  {announcements.length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div className="label" style={{ marginBottom: 8 }}>Stalberichten</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {announcements.map((a) => (
-                          <div key={a.id} className="note-item">
-                            <div className="note-item__header">
-                              <span className="note-item__date">
-                                {formatDatum(new Date(a.createdAt))}
-                              </span>
-                            </div>
-                            <div className="note-item__message">{a.message}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="label" style={{ marginBottom: 8 }}>Laatste mededelingen</div>
-                  {notes.length === 0 ? (
+                  <div className="label" style={{ marginBottom: 8 }}>Berichten</div>
+                  {berichten.length === 0 ? (
                     <p style={{ color: 'var(--velaro-color-muted)', fontSize: '0.875rem' }}>
-                      Nog geen mededelingen voor dit paard.
+                      Nog geen berichten voor dit paard.
                     </p>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {notes.map((note) => (
-                        <div key={note.id} className="note-item">
-                          <div className="note-item__header">
-                            <span className="note-item__author">
-                              {note.author.name ?? note.author.email}
-                            </span>
-                            <span className="note-item__date">
-                              {formatDatum(new Date(note.createdAt))}
-                            </span>
-                          </div>
-                          <div className="note-item__message">{note.message}</div>
-                        </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {berichten.map((bericht) => (
+                        <BerichtItem key={bericht.id} message={bericht} canManage={false} />
                       ))}
                     </div>
                   )}

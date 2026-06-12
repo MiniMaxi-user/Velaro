@@ -6,8 +6,9 @@ import { getTaskCountsForDate } from '@/features/taken/queries'
 import { getStableRole, canCreateStable, isPlatformAdmin, getMemberships } from '@/lib/auth/authorization'
 import { getAankomendGezondheidActies } from '@/features/gezondheid/queries'
 import AankomendZorgPanel from '@/features/gezondheid/AankomendZorgPanel'
-import { getAnnouncementsForStable } from '@/features/mededelingen/queries'
-import StalbrichtPanel from '@/features/mededelingen/StalbrichtPanel'
+import { getMessagesForStable } from '@/features/berichten/queries'
+import { markMessagesRead } from '@/features/berichten/actions'
+import BerichtenPanel from '@/features/berichten/BerichtenPanel'
 import { prisma } from '@/lib/prisma'
 import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
 
@@ -192,15 +193,20 @@ export default async function StalPage() {
   }
 
   const today = new Date()
-  const [horses, role, takenVandaag, zorgActies, announcements] = await Promise.all([
+  const [horses, role, takenVandaag, zorgActies, berichten] = await Promise.all([
     getHorsesForStable(stable.id),
     getStableRole(user.id, stable.id),
     getTaskCountsForDate(stable.id, today),
     getAankomendGezondheidActies(stable.id, 30),
-    getAnnouncementsForStable(stable.id, 5),
+    getMessagesForStable(stable.id, 10),
   ])
 
   const isOwner = role === 'OWNER'
+
+  // Wie het staldashboard opent, heeft de stalberichten gezien.
+  if (role !== null && berichten.length > 0) {
+    await markMessagesRead(berichten.map((b) => b.id))
+  }
   const openTaken = takenVandaag.total - takenVandaag.completed
   const verlopenZorg = zorgActies.filter((a) => a.isVerlopen).length
 
@@ -369,10 +375,12 @@ export default async function StalPage() {
 
       {/* Stalberichten */}
       {role !== null && (
-        <StalbrichtPanel
-          stableId={stable.id}
-          announcements={announcements}
-          isOwner={isOwner}
+        <BerichtenPanel
+          target={{ stableId: stable.id }}
+          title="Stalberichten"
+          messages={berichten}
+          canManage={isOwner}
+          emptyLabel="Nog geen stalberichten."
         />
       )}
 

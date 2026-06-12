@@ -31,9 +31,8 @@ model User {
   // Een gebruiker kan staf/eigenaar van stallen zijn én eigenaar van paarden.
   stableMemberships StableMember[]
   horseOwnerships   HorseOwner[]
-  stableNotes       StableNote[]
-  stableNoteReads   StableNoteRead[]
-  stableAnnouncements StableAnnouncement[]
+  messages          Message[]
+  messageReads      MessageRead[]
 }
 
 // ── Stal (pensionbedrijf) ────────────────────────────────────────────────────
@@ -69,7 +68,7 @@ model Stable {
   horses         Horse[]
   tasks          Task[]
   recurringTasks RecurringTask[]
-  announcements  StableAnnouncement[]
+  messages       Message[]
 }
 
 // Koppelt een gebruiker aan een stal met een rol (staf/eigenaar van de stal).
@@ -133,7 +132,7 @@ model Horse {
   vetVisits       VetVisit[]
   hoefsmitBezoeken HoefsmitBezoek[]
   tasks           Task[]
-  stableNotes     StableNote[]
+  messages        Message[]
   recurringTasks  RecurringTask[]
 
   createdAt DateTime @default(now())
@@ -226,46 +225,44 @@ model Task {
   @@index([stableId, date])
 }
 
-// ── Mededelingen per paard (stap 5) ─────────────────────────────────────────
+// ── Berichten (stap 5) ───────────────────────────────────────────────────────
+// Eén generiek berichtmodel. Precies één doel is gezet:
+//   - stableId  → stalbericht (zichtbaar voor stalleden + paardeneigenaren van de stal)
+//   - horseId   → paardbericht (zichtbaar voor stalleden + eigenaren van dat paard)
+// Het "precies één doel"-invariant wordt afgedwongen in de app-laag (actions) en
+// met een CHECK-constraint in de migratie.
 
-model StableNote {
+model Message {
   id        String   @id @default(uuid()) @db.Uuid
-  horseId   String   @db.Uuid
+  stableId  String?  @db.Uuid
+  horseId   String?  @db.Uuid
   authorId  String   @db.Uuid
-  message   String
+  subject   String
+  body      String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  horse  Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
-  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  reads  StableNoteRead[]
+  stable Stable? @relation(fields: [stableId], references: [id], onDelete: Cascade)
+  horse  Horse?  @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  author User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reads  MessageRead[]
 
+  @@index([stableId])
   @@index([horseId])
 }
 
-model StableNoteRead {
+// Per gebruiker per bericht: gelezen-status. Voedt de meldingen-bel in de topbar.
+model MessageRead {
   id        String   @id @default(uuid()) @db.Uuid
-  noteId    String   @db.Uuid
+  messageId String   @db.Uuid
   userId    String   @db.Uuid
   readAt    DateTime @default(now())
 
-  note StableNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([noteId, userId])
+  @@unique([messageId, userId])
   @@index([userId])
-}
-
-model StableAnnouncement {
-  id        String   @id @default(uuid()) @db.Uuid
-  stableId  String   @db.Uuid
-  authorId  String   @db.Uuid
-  message   String
-  createdAt DateTime @default(now())
-
-  stable Stable @relation(fields: [stableId], references: [id], onDelete: Cascade)
-  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  @@index([stableId])
 }
 
 // ── Terugkerende taken ───────────────────────────────────────────────────────
