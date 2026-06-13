@@ -176,6 +176,5 @@ Logo: `velaro_logo.png` (staat in `public/`).
   plan (welke bestanden, welk datamodel-effect, welke routes). Wacht op akkoord.
 - **Werk per stap uit de bouwvolgorde.** Niet vooruitlopen op latere stappen.
 - **Fundament-stappen streng**: geen schema-wijzigingen zonder overleg.
-- Houd PR's/wijzigingen klein en review-baar.
 - Geen `localStorage`-afhankelijke kernlogica; staat hoort in DB of server.
 - Bij twijfel over scope of stijl: vraag, niet aannemen.
