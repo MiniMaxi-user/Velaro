@@ -73,6 +73,7 @@ wil ik <doel>
 
 zodat <waarde>
 
+
 ### Context
 
 Waarom bestaat deze story?
@@ -87,11 +88,13 @@ Concrete en testbare criteria.
 
 Bij voorkeur:
 
-* Given
-* When
-* Then
+* Als
+* Wanneer
+* Dan
 
 of een duidelijke checklist.
+
+Herschrijf als er Given When Then structuur wordt gebruikt.
 
 ### Technische Notities
 
@@ -182,6 +185,17 @@ Geef een korte samenvatting:
 * Nieuwe status
 
 ---
+
+9. Vervolg
+
+Alleen wanneer:
+
+* Story verplaatst kan worden naar Ready
+
+Zorg dat de agent velaro-builder wordt aangestuurd om deze story op te pakken.
+
+---
+
 
 Beslissingsregels
 

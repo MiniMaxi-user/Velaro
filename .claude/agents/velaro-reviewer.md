@@ -179,10 +179,6 @@ Labels verwijderd:
 
 Beslissingsregels
 
-Als Automation = Paused:
-
-* Stop direct.
-
 Als label "needs-human" aanwezig is:
 
 * Stop direct.

@@ -168,6 +168,7 @@ Gebruik het recept:
 
 "Status van een item verzetten"
 
+
 ---
 
 8. Rapporteer.
@@ -179,6 +180,19 @@ Geef een korte samenvatting:
 * Gewijzigde bestanden
 * Commit hash
 * Korte beschrijving van de wijziging
+
+---
+
+
+9. Vervolg
+
+Alleen wanneer:
+
+* De implementatie volledig is uitgevoerd.
+* Acceptance criteria zijn afgedekt.
+* Code succesvol is opgeslagen en gepusht.
+
+Zorg dat de agent velaro-reviewer wordt aangestuurd om deze story op te pakken.
 
 ---
 
@@ -196,10 +210,6 @@ Als de opdracht geblokkeerd is:
 * needs-human
 * Ready
 * Stop
-
-Als Automation = Paused:
-
-* Stop onmiddellijk
 
 Als de implementatie gereed is:
 
