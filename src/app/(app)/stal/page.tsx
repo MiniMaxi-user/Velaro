@@ -223,9 +223,9 @@ export default async function StalPage() {
   ])
 
   if (!stable) {
-    // Paardeneigenaar zonder stalbeheerrol: doorsturen naar eigenaar-dashboard
-    const isHorseOwner = await prisma.horseOwner.count({ where: { userId: user.id } })
-    if (isHorseOwner > 0) redirect('/eigenaar')
+    // Paardeigenaar/bereider zonder stalbeheerrol: doorsturen naar eigenaar-dashboard
+    const linkedHorses = await prisma.horsePerson.count({ where: { userId: user.id } })
+    if (linkedHorses > 0) redirect('/eigenaar')
 
     return (
       <div className="empty-state">

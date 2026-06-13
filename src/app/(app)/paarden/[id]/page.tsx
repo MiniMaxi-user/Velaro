@@ -5,9 +5,8 @@ import { getHorse, getFeedingPlan } from '@/features/paarden/queries'
 import { getStableRole, canViewHorse } from '@/lib/auth/authorization'
 import { GESLACHT_LABELS, berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 import DeletePaardButton from '@/features/paarden/DeletePaardButton'
-import EigenaarBeheer from '@/features/paarden/EigenaarBeheer'
-import BereiderBeheer from '@/features/paarden/BereiderBeheer'
-import BereiderInfo from '@/features/paarden/BereiderInfo'
+import PersonenBeheer from '@/features/paarden/PersonenBeheer'
+import PersonenInfo from '@/features/paarden/PersonenInfo'
 import { getVaccinaties, getOntwormingen, getDierenartsBezzoeken, getHoefsmitBezoeKen } from '@/features/gezondheid/queries'
 import GezondheidTabs from '@/features/gezondheid/GezondheidTabs'
 import { getMessagesForHorse } from '@/features/berichten/queries'
@@ -201,11 +200,13 @@ export default async function PaardDetailPage({ params }: Props) {
           />
         )
 
+        const heeftEigenaar = horse.people.some((p) => p.isOwner)
+
         const contractenPanel = (
           <ContractenPanel
             horseId={id}
             contracts={contracten}
-            hasOwners={horse.owners.length > 0}
+            hasOwners={heeftEigenaar}
           />
         )
 
@@ -218,22 +219,12 @@ export default async function PaardDetailPage({ params }: Props) {
                 algemeen={algemeenPanel}
                 gezondheid={gezondheidPanel}
                 eigenaren={
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div className="panel">
-                      <div className="panel-header">
-                        <span className="panel-title">Eigenaren</span>
-                      </div>
-                      <div className="panel-body">
-                        <EigenaarBeheer horseId={id} owners={horse.owners} />
-                      </div>
+                  <div className="panel">
+                    <div className="panel-header">
+                      <span className="panel-title">Eigenaren &amp; bereiders</span>
                     </div>
-                    <div className="panel">
-                      <div className="panel-header">
-                        <span className="panel-title">Bereiders</span>
-                      </div>
-                      <div className="panel-body">
-                        <BereiderBeheer horseId={id} riders={horse.riders} />
-                      </div>
+                    <div className="panel-body">
+                      <PersonenBeheer horseId={id} people={horse.people} />
                     </div>
                   </div>
                 }
@@ -258,7 +249,7 @@ export default async function PaardDetailPage({ params }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {algemeenPanel}
               {identificatiePanel}
-              <BereiderInfo horseId={id} owners={horse.owners} riders={horse.riders} />
+              <PersonenInfo people={horse.people} />
               {voederschemaPanel}
               {gezondheidPanel}
               {berichtenPanel}

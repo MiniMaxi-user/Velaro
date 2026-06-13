@@ -50,10 +50,12 @@ export default async function BewerkContractPage({ params }: Props) {
     )
   }
 
-  const owners = horse.owners.map((o) => ({
-    userId: o.user.id,
-    label: o.user.name ?? o.user.email,
-  }))
+  const owners = horse.people
+    .filter((p) => p.isOwner)
+    .map((p) => ({
+      userId: p.user.id,
+      label: p.user.name ?? p.user.email,
+    }))
 
   const defaultStartDate = contract.startDate
     ? new Date(contract.startDate).toISOString().slice(0, 10)

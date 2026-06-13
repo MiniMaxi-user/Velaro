@@ -75,17 +75,18 @@ export async function getUnreadCountForHorseView(userId: string, horseId: string
  *  - paardberichten van paarden die hij bezit, of die in zijn stal(len) staan
  */
 async function visibleMessagesWhere(userId: string): Promise<Prisma.MessageWhereInput> {
-  const [memberships, ownerships] = await Promise.all([
+  const [memberships, links] = await Promise.all([
     prisma.stableMember.findMany({ where: { userId }, select: { stableId: true } }),
-    prisma.horseOwner.findMany({
+    // Paarden waaraan de gebruiker als eigenaar of bereider gekoppeld is.
+    prisma.horsePerson.findMany({
       where: { userId },
       select: { horseId: true, horse: { select: { stableId: true } } },
     }),
   ])
 
   const memberStableIds = memberships.map((m) => m.stableId)
-  const ownedHorseIds = ownerships.map((o) => o.horseId)
-  const ownedHorseStableIds = ownerships.map((o) => o.horse.stableId)
+  const ownedHorseIds = links.map((l) => l.horseId)
+  const ownedHorseStableIds = links.map((l) => l.horse.stableId)
   const stableIds = [...new Set([...memberStableIds, ...ownedHorseStableIds])]
 
   const conditions: Prisma.MessageWhereInput[] = []

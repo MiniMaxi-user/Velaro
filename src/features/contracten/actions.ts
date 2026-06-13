@@ -37,10 +37,10 @@ export async function createStallingContract(horseId: string, formData: FormData
   }
 
   // De wederpartij moet een eigenaar van dit paard zijn.
-  const ownerLink = await prisma.horseOwner.findUnique({
+  const ownerLink = await prisma.horsePerson.findUnique({
     where: { horseId_userId: { horseId, userId: counterpartyUserId } },
   })
-  if (!ownerLink) {
+  if (!ownerLink || !ownerLink.isOwner) {
     throw new Error('De gekozen wederpartij is geen eigenaar van dit paard.')
   }
 
@@ -94,10 +94,10 @@ export async function updateStallingContract(
   }
 
   // De wederpartij moet een eigenaar van dit paard zijn.
-  const ownerLink = await prisma.horseOwner.findUnique({
+  const ownerLink = await prisma.horsePerson.findUnique({
     where: { horseId_userId: { horseId, userId: counterpartyUserId } },
   })
-  if (!ownerLink) {
+  if (!ownerLink || !ownerLink.isOwner) {
     throw new Error('De gekozen wederpartij is geen eigenaar van dit paard.')
   }
 

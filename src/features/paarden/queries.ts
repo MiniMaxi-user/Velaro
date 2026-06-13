@@ -2,12 +2,13 @@ import { prisma } from '@/lib/prisma'
 import { getActiveStable } from '@/lib/active-stable'
 
 export async function getHorsesForOwner(userId: string) {
-  const ownerships = await prisma.horseOwner.findMany({
+  // Paarden waaraan de gebruiker als eigenaar én/of bereider gekoppeld is.
+  const links = await prisma.horsePerson.findMany({
     where: { userId },
     include: { horse: true },
     orderBy: { createdAt: 'asc' },
   })
-  return ownerships.map((o) => o.horse)
+  return links.map((l) => l.horse)
 }
 
 export async function getUserStable(userId: string) {
@@ -29,12 +30,10 @@ export async function getHorse(id: string) {
   return prisma.horse.findUnique({
     where: { id },
     include: {
-      owners: {
+      people: {
         include: {
           user: { select: { id: true, name: true, email: true } },
         },
-      },
-      riders: {
         orderBy: { createdAt: 'asc' },
       },
       stable: {

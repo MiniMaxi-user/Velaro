@@ -22,8 +22,8 @@ type HorseOwner = {
   email: string
   maxStables: number
   createdAt: Date
-  _count: { horseOwnerships: number }
-  horseOwnerships: {
+  _count: { horsePeople: number }
+  horsePeople: {
     horse: {
       id: string
       name: string
@@ -75,7 +75,7 @@ export default function EigenaarAccountsTabs({ stableOwners, horseOwners }: Prop
       (o) =>
         (o.name ?? '').toLowerCase().includes(q) ||
         o.email.toLowerCase().includes(q) ||
-        o.horseOwnerships.some((ho) =>
+        o.horsePeople.some((ho) =>
           ho.horse.name.toLowerCase().includes(q) ||
           (ho.horse.stable?.name ?? '').toLowerCase().includes(q)
         )
@@ -226,7 +226,7 @@ export default function EigenaarAccountsTabs({ stableOwners, horseOwners }: Prop
                 {filteredHorseOwners.map((owner) => {
                   // Deduplicate stables
                   const stableMap = new Map<string, string>()
-                  owner.horseOwnerships.forEach((ho) => {
+                  owner.horsePeople.forEach((ho) => {
                     if (ho.horse.stable) {
                       stableMap.set(ho.horse.stable.id, ho.horse.stable.name)
                     }
@@ -248,7 +248,7 @@ export default function EigenaarAccountsTabs({ stableOwners, horseOwners }: Prop
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          {owner.horseOwnerships.map((ho) => (
+                          {owner.horsePeople.map((ho) => (
                             <Link
                               key={ho.horse.id}
                               href={`/paarden/${ho.horse.id}`}

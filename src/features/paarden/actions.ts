@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { getStableRole, isHorseOwner } from '@/lib/auth/authorization'
+import { getStableRole } from '@/lib/auth/authorization'
 import type { HorseSex } from '@prisma/client'
 import { getUserStable } from './queries'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -96,10 +96,26 @@ export async function updateHorse(id: string, formData: FormData) {
   redirect(`/paarden/${id}`)
 }
 
-export async function addHorseOwner(
-  horseId: string,
-  formData: FormData
-): Promise<{ error: string } | undefined> {
+// ── Personen (eigenaar / bereider) ──────────────────────────────────────────
+// Een persoon (account) is via HorsePerson aan een paard gekoppeld met één of
+// beide rollen (isOwner / isRider). App-invariant: minstens één rol actief,
+// anders bestaat de koppeling niet.
+
+type PersonRole = 'owner' | 'rider'
+
+function parseRoles(formData: FormData): { isOwner: boolean; isRider: boolean } {
+  return {
+    isOwner: formData.get('isOwner') === 'true',
+    isRider: formData.get('isRider') === 'true',
+  }
+}
+
+type StaffHorse = Awaited<ReturnType<typeof prisma.horse.findUnique>>
+
+// Helper: laad het paard en controleer dat de huidige gebruiker OWNER/STAFF is.
+async function getStaffHorse(
+  horseId: string
+): Promise<{ error: string } | { error?: undefined; horse: NonNullable<StaffHorse> }> {
   const user = await getCurrentUser()
 
   const horse = await prisma.horse.findUnique({ where: { id: horseId } })
@@ -107,52 +123,103 @@ export async function addHorseOwner(
 
   const role = await getStableRole(user.id, horse.stableId)
   if (!role) return { error: 'Geen toegang' }
+
+  return { horse }
+}
+
+/**
+ * Koppelt een bestaande persoon (account) via e-mailadres aan een paard met de
+ * gekozen rollen. Minstens één rol is verplicht.
+ */
+export async function addHorsePerson(
+  horseId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const ctx = await getStaffHorse(horseId)
+  if (ctx.error) return { error: ctx.error }
 
   const email = (formData.get('email') as string)?.trim().toLowerCase()
   if (!email) return { error: 'E-mailadres is verplicht' }
 
+  const { isOwner, isRider } = parseRoles(formData)
+  if (!isOwner && !isRider) return { error: 'Kies minstens één rol (eigenaar of bereider).' }
+
   const targetUser = await prisma.user.findUnique({ where: { email } })
   if (!targetUser)
-    return { error: `Geen account gevonden voor ${email}. Vraag deze persoon eerst in te loggen op Velaro.` }
+    return { error: `Geen account gevonden voor ${email}. Vraag deze persoon eerst in te loggen op Velaro, of maak een account aan.` }
 
-  const existing = await prisma.horseOwner.findUnique({
+  const existing = await prisma.horsePerson.findUnique({
     where: { horseId_userId: { horseId, userId: targetUser.id } },
   })
-  if (existing) return { error: 'Deze gebruiker is al eigenaar van dit paard' }
+  if (existing) return { error: 'Deze persoon is al gekoppeld aan dit paard' }
 
-  await prisma.horseOwner.create({ data: { horseId, userId: targetUser.id } })
+  await prisma.horsePerson.create({
+    data: { horseId, userId: targetUser.id, isOwner, isRider },
+  })
 
   revalidatePath(`/paarden/${horseId}`)
 }
 
-export async function removeHorseOwner(
+/**
+ * Zet één rol (eigenaar/bereider) van een gekoppelde persoon aan of uit. Wordt
+ * de laatste actieve rol uitgezet, dan wordt de persoon ontkoppeld (de koppeling
+ * verwijderd) — een koppeling zonder rol bestaat niet.
+ */
+export async function toggleHorsePersonRole(
   horseId: string,
-  ownershipId: string
+  personId: string,
+  role: PersonRole,
+  enabled: boolean
 ): Promise<{ error: string } | undefined> {
-  const user = await getCurrentUser()
+  const ctx = await getStaffHorse(horseId)
+  if (ctx.error) return { error: ctx.error }
 
-  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
-  if (!horse) return { error: 'Paard niet gevonden' }
+  const person = await prisma.horsePerson.findUnique({ where: { id: personId } })
+  if (!person || person.horseId !== horseId) return { error: 'Persoon niet gevonden' }
 
-  const role = await getStableRole(user.id, horse.stableId)
-  if (!role) return { error: 'Geen toegang' }
+  const next = {
+    isOwner: role === 'owner' ? enabled : person.isOwner,
+    isRider: role === 'rider' ? enabled : person.isRider,
+  }
 
-  await prisma.horseOwner.delete({ where: { id: ownershipId } })
+  // Laatste rol uitgezet → ontkoppelen.
+  if (!next.isOwner && !next.isRider) {
+    await prisma.horsePerson.delete({ where: { id: personId } })
+  } else {
+    await prisma.horsePerson.update({ where: { id: personId }, data: next })
+  }
 
   revalidatePath(`/paarden/${horseId}`)
 }
 
-export async function createAndLinkEigenaar(
+/**
+ * Ontkoppelt een persoon volledig van het paard (verwijdert alle rollen).
+ */
+export async function removeHorsePerson(
+  horseId: string,
+  personId: string
+): Promise<{ error: string } | undefined> {
+  const ctx = await getStaffHorse(horseId)
+  if (ctx.error) return { error: ctx.error }
+
+  const person = await prisma.horsePerson.findUnique({ where: { id: personId } })
+  if (!person || person.horseId !== horseId) return { error: 'Persoon niet gevonden' }
+
+  await prisma.horsePerson.delete({ where: { id: personId } })
+
+  revalidatePath(`/paarden/${horseId}`)
+}
+
+/**
+ * Maakt een account aan (of hergebruikt een bestaand account) en koppelt de
+ * persoon met de gekozen rollen aan het paard. Minstens één rol is verplicht.
+ */
+export async function createAndLinkPerson(
   horseId: string,
   formData: FormData
 ): Promise<{ error: string } | undefined> {
-  const user = await getCurrentUser()
-
-  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
-  if (!horse) return { error: 'Paard niet gevonden' }
-
-  const role = await getStableRole(user.id, horse.stableId)
-  if (!role) return { error: 'Geen toegang' }
+  const ctx = await getStaffHorse(horseId)
+  if (ctx.error) return { error: ctx.error }
 
   const email = (formData.get('email') as string)?.trim().toLowerCase()
   const name = (formData.get('name') as string)?.trim() || null
@@ -161,13 +228,16 @@ export async function createAndLinkEigenaar(
   if (!email) return { error: 'E-mailadres is verplicht' }
   if (!password || password.length < 8) return { error: 'Wachtwoord moet minimaal 8 tekens bevatten' }
 
+  const { isOwner, isRider } = parseRoles(formData)
+  if (!isOwner && !isRider) return { error: 'Kies minstens één rol (eigenaar of bereider).' }
+
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
-    const alreadyLinked = await prisma.horseOwner.findUnique({
+    const alreadyLinked = await prisma.horsePerson.findUnique({
       where: { horseId_userId: { horseId, userId: existing.id } },
     })
-    if (alreadyLinked) return { error: 'Deze eigenaar is al gekoppeld aan dit paard' }
-    await prisma.horseOwner.create({ data: { horseId, userId: existing.id } })
+    if (alreadyLinked) return { error: 'Deze persoon is al gekoppeld aan dit paard' }
+    await prisma.horsePerson.create({ data: { horseId, userId: existing.id, isOwner, isRider } })
     revalidatePath(`/paarden/${horseId}`)
     redirect(`/paarden/${horseId}`)
   }
@@ -185,7 +255,7 @@ export async function createAndLinkEigenaar(
     await prisma.user.create({
       data: { id: authData.user.id, email, name, maxStables: 0, isPlatformAdmin: false },
     })
-    await prisma.horseOwner.create({ data: { horseId, userId: authData.user.id } })
+    await prisma.horsePerson.create({ data: { horseId, userId: authData.user.id, isOwner, isRider } })
   } catch {
     await adminClient.auth.admin.deleteUser(authData.user.id)
     return { error: 'Fout bij opslaan in database. Account is teruggedraaid.' }
@@ -193,119 +263,6 @@ export async function createAndLinkEigenaar(
 
   revalidatePath(`/paarden/${horseId}`)
   redirect(`/paarden/${horseId}`)
-}
-
-// ── Bereiders (HorseRider) ───────────────────────────────────────────────────
-
-function parseRiderFormData(formData: FormData) {
-  const dateOfBirthStr = (formData.get('dateOfBirth') as string)?.trim()
-  return {
-    dateOfBirth: dateOfBirthStr ? new Date(dateOfBirthStr) : null,
-    phone: (formData.get('phone') as string)?.trim() || null,
-    email: (formData.get('email') as string)?.trim() || null,
-    notes: (formData.get('notes') as string)?.trim() || null,
-  }
-}
-
-export async function addHorseRider(
-  horseId: string,
-  formData: FormData
-): Promise<{ error: string } | undefined> {
-  const user = await getCurrentUser()
-
-  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
-  if (!horse) return { error: 'Paard niet gevonden' }
-
-  const role = await getStableRole(user.id, horse.stableId)
-  if (!role) return { error: 'Geen toegang' }
-
-  const name = (formData.get('name') as string)?.trim()
-  if (!name) return { error: 'Naam is verplicht' }
-
-  await prisma.horseRider.create({
-    data: { horseId, name, ...parseRiderFormData(formData) },
-  })
-
-  revalidatePath(`/paarden/${horseId}`)
-}
-
-export async function updateHorseRider(
-  horseId: string,
-  riderId: string,
-  formData: FormData
-): Promise<{ error: string } | undefined> {
-  const user = await getCurrentUser()
-
-  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
-  if (!horse) return { error: 'Paard niet gevonden' }
-
-  const role = await getStableRole(user.id, horse.stableId)
-  if (!role) return { error: 'Geen toegang' }
-
-  const rider = await prisma.horseRider.findUnique({ where: { id: riderId } })
-  if (!rider || rider.horseId !== horseId) return { error: 'Bereider niet gevonden' }
-
-  const name = (formData.get('name') as string)?.trim()
-  if (!name) return { error: 'Naam is verplicht' }
-
-  await prisma.horseRider.update({
-    where: { id: riderId },
-    data: { name, ...parseRiderFormData(formData) },
-  })
-
-  revalidatePath(`/paarden/${horseId}`)
-}
-
-/**
- * Werkt UITSLUITEND het telefoonnummer van een bereider bij.
- * Toegestaan voor staf/eigenaar van de stal én voor de paardeigenaar.
- * Muteert bewust geen enkel ander veld.
- */
-export async function updateRiderPhone(
-  horseId: string,
-  riderId: string,
-  formData: FormData
-): Promise<{ error: string } | undefined> {
-  const user = await getCurrentUser()
-
-  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
-  if (!horse) return { error: 'Paard niet gevonden' }
-
-  const role = await getStableRole(user.id, horse.stableId)
-  const isOwner = role ? false : await isHorseOwner(user.id, horseId)
-  if (!role && !isOwner) return { error: 'Geen toegang' }
-
-  const rider = await prisma.horseRider.findUnique({ where: { id: riderId } })
-  if (!rider || rider.horseId !== horseId) return { error: 'Bereider niet gevonden' }
-
-  const phone = (formData.get('phone') as string)?.trim() || null
-
-  await prisma.horseRider.update({
-    where: { id: riderId },
-    data: { phone },
-  })
-
-  revalidatePath(`/paarden/${horseId}`)
-}
-
-export async function removeHorseRider(
-  horseId: string,
-  riderId: string
-): Promise<{ error: string } | undefined> {
-  const user = await getCurrentUser()
-
-  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
-  if (!horse) return { error: 'Paard niet gevonden' }
-
-  const role = await getStableRole(user.id, horse.stableId)
-  if (!role) return { error: 'Geen toegang' }
-
-  const rider = await prisma.horseRider.findUnique({ where: { id: riderId } })
-  if (!rider || rider.horseId !== horseId) return { error: 'Bereider niet gevonden' }
-
-  await prisma.horseRider.delete({ where: { id: riderId } })
-
-  revalidatePath(`/paarden/${horseId}`)
 }
 
 export async function saveFeedingPlan(
