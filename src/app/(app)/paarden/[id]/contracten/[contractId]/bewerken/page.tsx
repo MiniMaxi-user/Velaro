@@ -7,6 +7,8 @@ import { prisma } from '@/lib/prisma'
 import ContractForm from '@/features/contracten/ContractForm'
 import { updateStallingContract } from '@/features/contracten/actions'
 import { leesHuisvesting } from '@/features/contracten/huisvesting'
+import { leesDienstpakket } from '@/features/contracten/dienstpakket'
+import { getFeedingPlan } from '@/features/paarden/queries'
 
 interface Props {
   params: Promise<{ id: string; contractId: string }>
@@ -69,6 +71,17 @@ export default async function BewerkContractPage({ params }: Props) {
     huisvesting.boxNumber = horse.boxNumber
   }
 
+  // Dienstpakket (voer/weidegang/faciliteiten, STAL-04) uit de contract-config.
+  const dienstpakket = leesDienstpakket(contract.config)
+
+  // Voorvulwaarden uit het voederschema van het paard; null wanneer er geen
+  // FeedingPlan is, zodat de overnemen-knop in het formulier wordt uitgeschakeld.
+  const feedingPlan = await getFeedingPlan(id)
+  const voederschema =
+    feedingPlan && (feedingPlan.roughage || feedingPlan.concentrate)
+      ? { ruwvoer: feedingPlan.roughage, krachtvoer: feedingPlan.concentrate }
+      : null
+
   const action = updateStallingContract.bind(null, id, contractId)
 
   return (
@@ -89,6 +102,8 @@ export default async function BewerkContractPage({ params }: Props) {
         defaultCounterpartyUserId={contract.counterpartyUserId ?? undefined}
         defaultStartDate={defaultStartDate}
         huisvesting={huisvesting}
+        dienstpakket={dienstpakket}
+        voederschema={voederschema}
         submitLabel="Wijzigingen opslaan"
       />
     </main>

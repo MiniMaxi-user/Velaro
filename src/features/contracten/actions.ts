@@ -6,6 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { getStableRole } from '@/lib/auth/authorization'
 import { BOXTYPE_LABELS, type Boxtype, type HuisvestingConfig } from './huisvesting'
+import {
+  FACILITEIT_OPTIES,
+  WEIDEGANG_VORM_LABELS,
+  type DienstpakketConfig,
+  type Faciliteit,
+  type WeidegangVorm,
+} from './dienstpakket'
 
 // Leest de huisvesting-opties (STAL-03) uit het formulier. Onbekende boxtypes
 // vallen terug op null; lege tekstvelden worden genormaliseerd naar null.
@@ -24,6 +31,35 @@ function leesHuisvestingForm(formData: FormData): HuisvestingConfig {
     opstrooien: formData.get('opstrooien') === 'true',
     beddingtype,
     toezicht,
+  }
+}
+
+// Leest het dienstpakket (voer & verzorging, weidegang, faciliteiten — STAL-04)
+// uit het formulier. Lege tekstvelden worden genormaliseerd naar null; onbekende
+// keuzes vallen terug op null. Voervelden worden los van het FeedingPlan bewaard.
+function leesDienstpakketForm(formData: FormData): DienstpakketConfig {
+  const ruwvoer = (formData.get('voerRuwvoer') as string)?.trim() || null
+  const krachtvoer = (formData.get('voerKrachtvoer') as string)?.trim() || null
+
+  const vormRaw = (formData.get('weidegangVorm') as string)?.trim()
+  const vorm: WeidegangVorm | null =
+    vormRaw && vormRaw in WEIDEGANG_VORM_LABELS ? (vormRaw as WeidegangVorm) : null
+  const urenPerDag = (formData.get('weidegangUren') as string)?.trim() || null
+  const seizoen = (formData.get('weidegangSeizoen') as string)?.trim() || null
+
+  // Faciliteiten als checkbox-set; alleen bekende opties, in canonieke volgorde.
+  const aangevinkt = new Set(formData.getAll('faciliteiten').map((v) => String(v)))
+  const geselecteerd: Faciliteit[] = FACILITEIT_OPTIES.filter((f) => aangevinkt.has(f))
+
+  return {
+    voer: { ruwvoer, krachtvoer },
+    weidegang: {
+      actief: formData.get('weidegangActief') === 'true',
+      vorm,
+      urenPerDag,
+      seizoen,
+    },
+    faciliteiten: { geselecteerd },
   }
 }
 
@@ -122,14 +158,22 @@ export async function updateStallingContract(
     throw new Error('De gekozen wederpartij is geen eigenaar van dit paard.')
   }
 
-  // Huisvesting-opties (STAL-03) als JSON-blok onder config.huisvesting bewaren.
-  // Bestaande config-sleutels van andere stories blijven behouden.
+  // Huisvesting-opties (STAL-03) en het dienstpakket (voer/weidegang/faciliteiten,
+  // STAL-04) als JSON-blokken onder config bewaren. Bestaande config-sleutels van
+  // andere stories blijven behouden.
   const huisvesting = leesHuisvestingForm(formData)
+  const dienstpakket = leesDienstpakketForm(formData)
   const bestaandeConfig =
     contract.config && typeof contract.config === 'object' && !Array.isArray(contract.config)
       ? (contract.config as Record<string, unknown>)
       : {}
-  const nieuweConfig = { ...bestaandeConfig, huisvesting }
+  const nieuweConfig = {
+    ...bestaandeConfig,
+    huisvesting,
+    voer: dienstpakket.voer,
+    weidegang: dienstpakket.weidegang,
+    faciliteiten: dienstpakket.faciliteiten.geselecteerd,
+  }
 
   await prisma.contract.update({
     where: { id: contractId },
