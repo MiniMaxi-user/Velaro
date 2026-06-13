@@ -63,7 +63,7 @@ export default function EigenaarBeheer({ horseId, owners }: {
                 <td className="gezondheid-tabel__acties">
                   <Link
                     href={`/paarden/${horseId}/eigenaren/${o.id}/bewerken`}
-                    className="btn-ghost btn-ghost--sm"
+                    className="btn-icon"
                     title={`Gegevens van ${o.user.name ?? o.user.email} bewerken`}
                     aria-label="Eigenaar bewerken"
                   >
@@ -73,10 +73,14 @@ export default function EigenaarBeheer({ horseId, owners }: {
                   </Link>
                   <button
                     type="button"
-                    className="btn-danger btn-danger--sm"
+                    className="btn-icon btn-icon--danger"
+                    title="Ontkoppelen"
+                    aria-label="Ontkoppelen"
                     onClick={() => handleRemove(o.id, o.user.name ?? o.user.email)}
                   >
-                    Ontkoppelen
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.7 7h6.6L11 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </button>
                 </td>
               </tr>

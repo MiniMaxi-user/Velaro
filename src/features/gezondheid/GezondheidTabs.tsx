@@ -153,7 +153,11 @@ export default function GezondheidTabs({
                   <td className="gezondheid-tabel__muted">{v.notes ?? '—'}</td>
                   {canEdit && (
                     <td className="gezondheid-tabel__acties">
-                      <Link href={`/paarden/${horseId}/vaccinaties/${v.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
+                      <Link href={`/paarden/${horseId}/vaccinaties/${v.id}/bewerken`} className="btn-icon" title="Bewerken" aria-label="Bewerken">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                        </svg>
+                      </Link>
                       <DeleteGezondheidButton id={v.id} horseId={horseId} type="vaccinatie" />
                     </td>
                   )}
@@ -190,7 +194,11 @@ export default function GezondheidTabs({
                   <td className="gezondheid-tabel__muted">{o.notes ?? '—'}</td>
                   {canEdit && (
                     <td className="gezondheid-tabel__acties">
-                      <Link href={`/paarden/${horseId}/ontworming/${o.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
+                      <Link href={`/paarden/${horseId}/ontworming/${o.id}/bewerken`} className="btn-icon" title="Bewerken" aria-label="Bewerken">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                        </svg>
+                      </Link>
                       <DeleteGezondheidButton id={o.id} horseId={horseId} type="ontworming" />
                     </td>
                   )}
@@ -225,7 +233,11 @@ export default function GezondheidTabs({
                   <td className="gezondheid-tabel__muted">{b.notes ?? '—'}</td>
                   {canEdit && (
                     <td className="gezondheid-tabel__acties">
-                      <Link href={`/paarden/${horseId}/dierenarts/${b.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
+                      <Link href={`/paarden/${horseId}/dierenarts/${b.id}/bewerken`} className="btn-icon" title="Bewerken" aria-label="Bewerken">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                        </svg>
+                      </Link>
                       <DeleteGezondheidButton id={b.id} horseId={horseId} type="dierenarts" />
                     </td>
                   )}
@@ -262,7 +274,11 @@ export default function GezondheidTabs({
                   <td className="gezondheid-tabel__muted">{h.notes ?? '—'}</td>
                   {canEdit && (
                     <td className="gezondheid-tabel__acties">
-                      <Link href={`/paarden/${horseId}/hoefsmit/${h.id}/bewerken`} className="btn-ghost btn-ghost--sm">Bewerken</Link>
+                      <Link href={`/paarden/${horseId}/hoefsmit/${h.id}/bewerken`} className="btn-icon" title="Bewerken" aria-label="Bewerken">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                        </svg>
+                      </Link>
                       <DeleteGezondheidButton id={h.id} horseId={horseId} type="hoefsmit" />
                     </td>
                   )}
