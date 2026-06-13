@@ -13,6 +13,20 @@ import {
   type Faciliteit,
   type WeidegangVorm,
 } from './dienstpakket'
+import {
+  BTW_MODUS_LABELS,
+  LOOPTIJD_AARD_LABELS,
+  OPZEGTERMIJN_EENHEID_LABELS,
+  VERLENGING_LABELS,
+  INDEXERING_MOMENT_LABELS,
+  DEFAULT_OPZEGTERMIJN,
+  type BtwModus,
+  type LooptijdAard,
+  type OpzegtermijnEenheid,
+  type Verlenging,
+  type IndexeringMoment,
+  type PrijsLooptijdConfig,
+} from './prijsLooptijd'
 
 // Leest de huisvesting-opties (STAL-03) uit het formulier. Onbekende boxtypes
 // vallen terug op null; lege tekstvelden worden genormaliseerd naar null.
@@ -60,6 +74,112 @@ function leesDienstpakketForm(formData: FormData): DienstpakketConfig {
       seizoen,
     },
     faciliteiten: { geselecteerd },
+  }
+}
+
+// Hulp: leest een niet-negatief bedrag/getal uit het formulier. Lege invoer -> null.
+// Gooit een fout bij negatieve of onleesbare waarden (server-side validatie).
+function leesNietNegatiefGetal(value: FormDataEntryValue | null, label: string): number | null {
+  const raw = (value as string)?.trim()
+  if (!raw) return null
+  const n = Number(raw.replace(',', '.'))
+  if (!Number.isFinite(n)) {
+    throw new Error(`${label} moet een geldig getal zijn.`)
+  }
+  if (n < 0) {
+    throw new Error(`${label} mag niet negatief zijn.`)
+  }
+  return n
+}
+
+// Leest prijs, borg & looptijd (STAL-05) uit het formulier en valideert server-side.
+// De gegevens worden onder config.prijsLooptijd bewaard. Gooit bij overtreding van
+// een acceptatiecriterium een fout (opslaan wordt geweigerd).
+function leesPrijsLooptijdForm(formData: FormData): PrijsLooptijdConfig {
+  // ── Prijs ──
+  const bedrag = leesNietNegatiefGetal(formData.get('prijsBedrag'), 'De pensionprijs')
+  const btwModusRaw = (formData.get('prijsBtwModus') as string)?.trim()
+  const btwModus: BtwModus =
+    btwModusRaw && btwModusRaw in BTW_MODUS_LABELS ? (btwModusRaw as BtwModus) : 'INCL'
+  const btwPercentage = leesNietNegatiefGetal(
+    formData.get('prijsBtwPercentage'),
+    'Het btw-percentage',
+  )
+
+  // ── Borg ──
+  const borgActief = formData.get('borgActief') === 'true'
+  const borgBedrag = leesNietNegatiefGetal(formData.get('borgBedrag'), 'Het borgbedrag')
+  if (borgActief && borgBedrag === null) {
+    throw new Error('Vul een borgbedrag in wanneer borg is ingeschakeld.')
+  }
+
+  // ── Looptijd ──
+  const aardRaw = (formData.get('looptijdAard') as string)?.trim()
+  const aard: LooptijdAard =
+    aardRaw && aardRaw in LOOPTIJD_AARD_LABELS ? (aardRaw as LooptijdAard) : 'ONBEPAALD'
+
+  const einddatum = (formData.get('looptijdEinddatum') as string)?.trim() || null
+  if (aard === 'BEPAALD' && !einddatum) {
+    throw new Error('Vul een einddatum in bij een contract voor bepaalde tijd.')
+  }
+
+  const minimumperiode = (formData.get('looptijdMinimumperiode') as string)?.trim() || null
+
+  const opzegWaardeRaw = leesNietNegatiefGetal(
+    formData.get('opzegtermijnWaarde'),
+    'De opzegtermijn',
+  )
+  const opzegEenheidRaw = (formData.get('opzegtermijnEenheid') as string)?.trim()
+  const opzegEenheid: OpzegtermijnEenheid =
+    opzegEenheidRaw && opzegEenheidRaw in OPZEGTERMIJN_EENHEID_LABELS
+      ? (opzegEenheidRaw as OpzegtermijnEenheid)
+      : DEFAULT_OPZEGTERMIJN.eenheid
+  const opzegtermijn = {
+    waarde: opzegWaardeRaw ?? DEFAULT_OPZEGTERMIJN.waarde,
+    eenheid: opzegEenheid,
+    schriftelijk: formData.get('opzegtermijnSchriftelijk') !== 'false',
+  }
+
+  const verlengingRaw = (formData.get('looptijdVerlenging') as string)?.trim()
+  const verlenging: Verlenging =
+    verlengingRaw && verlengingRaw in VERLENGING_LABELS
+      ? (verlengingRaw as Verlenging)
+      : 'STILZWIJGEND'
+
+  const proefActief = formData.get('proefperiodeActief') === 'true'
+  const proefDuur = (formData.get('proefperiodeDuur') as string)?.trim() || null
+
+  const indexActief = formData.get('indexeringActief') === 'true'
+  const indexGrondslag = (formData.get('indexeringGrondslag') as string)?.trim() || null
+  const indexMomentRaw = (formData.get('indexeringMoment') as string)?.trim()
+  const indexMoment: IndexeringMoment | null =
+    indexMomentRaw && indexMomentRaw in INDEXERING_MOMENT_LABELS
+      ? (indexMomentRaw as IndexeringMoment)
+      : null
+
+  return {
+    prijs: {
+      bedrag,
+      btwModus,
+      btwPercentage: btwPercentage ?? 21,
+    },
+    borg: {
+      actief: borgActief,
+      bedrag: borgActief ? borgBedrag : null,
+    },
+    looptijd: {
+      aard,
+      einddatum: aard === 'BEPAALD' ? einddatum : null,
+      minimumperiode,
+      opzegtermijn,
+      verlenging,
+      proefperiode: { actief: proefActief, duur: proefActief ? proefDuur : null },
+      indexering: {
+        actief: indexActief,
+        grondslag: indexActief ? indexGrondslag : null,
+        moment: indexActief ? indexMoment : null,
+      },
+    },
   }
 }
 
@@ -163,6 +283,8 @@ export async function updateStallingContract(
   // andere stories blijven behouden.
   const huisvesting = leesHuisvestingForm(formData)
   const dienstpakket = leesDienstpakketForm(formData)
+  // Prijs, borg & looptijd (STAL-05) — server-side gevalideerd in de reader.
+  const prijsLooptijd = leesPrijsLooptijdForm(formData)
   const bestaandeConfig =
     contract.config && typeof contract.config === 'object' && !Array.isArray(contract.config)
       ? (contract.config as Record<string, unknown>)
@@ -173,6 +295,7 @@ export async function updateStallingContract(
     voer: dienstpakket.voer,
     weidegang: dienstpakket.weidegang,
     faciliteiten: dienstpakket.faciliteiten.geselecteerd,
+    prijsLooptijd,
   }
 
   await prisma.contract.update({

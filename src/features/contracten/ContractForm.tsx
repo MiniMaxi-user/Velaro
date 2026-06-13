@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import SubmitButton from '@/components/SubmitButton'
 import { BOXTYPE_OPTIES, BOXTYPE_LABELS, type HuisvestingConfig } from './huisvesting'
@@ -11,6 +11,22 @@ import {
   WEIDEGANG_VORM_LABELS,
   type DienstpakketConfig,
 } from './dienstpakket'
+import {
+  BTW_MODUS_OPTIES,
+  BTW_MODUS_LABELS,
+  LOOPTIJD_AARD_OPTIES,
+  LOOPTIJD_AARD_LABELS,
+  OPZEGTERMIJN_EENHEID_OPTIES,
+  OPZEGTERMIJN_EENHEID_LABELS,
+  VERLENGING_OPTIES,
+  VERLENGING_LABELS,
+  INDEXERING_MOMENT_OPTIES,
+  INDEXERING_MOMENT_LABELS,
+  isOpzegtermijnKorterDanMaand,
+  type PrijsLooptijdConfig,
+  type LooptijdAard,
+  type OpzegtermijnEenheid,
+} from './prijsLooptijd'
 
 type OwnerOption = { userId: string; label: string }
 
@@ -30,6 +46,7 @@ export default function ContractForm({
   huisvesting,
   dienstpakket,
   voederschema,
+  prijsLooptijd,
   submitLabel = 'Concept aanmaken',
 }: {
   horseId: string
@@ -44,10 +61,30 @@ export default function ContractForm({
   dienstpakket?: DienstpakketConfig
   // Voorvulwaarden uit het FeedingPlan; null wanneer het paard geen voederschema heeft.
   voederschema?: VoerVoorvulling | null
+  // Wanneer meegegeven, toont het formulier de sectie "Prijs & looptijd".
+  prijsLooptijd?: PrijsLooptijdConfig
   submitLabel?: string
 }) {
   const ruwvoerRef = useRef<HTMLInputElement>(null)
   const krachtvoerRef = useRef<HTMLInputElement>(null)
+
+  // Client-state voor de prijs/looptijd-sectie: aard stuurt de zichtbaarheid van de
+  // einddatum; de opzegtermijn-velden tonen een waarschuwing als de termijn korter
+  // dan 1 kalendermaand is. Harde validatie gebeurt altijd server-side.
+  const [looptijdAard, setLooptijdAard] = useState<LooptijdAard>(
+    prijsLooptijd?.looptijd.aard ?? 'ONBEPAALD',
+  )
+  const [opzegWaarde, setOpzegWaarde] = useState<number>(
+    prijsLooptijd?.looptijd.opzegtermijn.waarde ?? 1,
+  )
+  const [opzegEenheid, setOpzegEenheid] = useState<OpzegtermijnEenheid>(
+    prijsLooptijd?.looptijd.opzegtermijn.eenheid ?? 'MAANDEN',
+  )
+  const opzegtermijnKort = isOpzegtermijnKorterDanMaand({
+    waarde: opzegWaarde,
+    eenheid: opzegEenheid,
+    schriftelijk: true,
+  })
 
   // Vult de voervelden vanuit het voederschema (roughage -> ruwvoer, concentrate ->
   // krachtvoer). De velden blijven daarna bewerkbaar. Zonder voederschema is de knop
@@ -325,6 +362,264 @@ export default function ContractForm({
                   </label>
                 </div>
               ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {prijsLooptijd && (
+        <>
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Prijs &amp; borg</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="prijsBedrag" className="form-label">Pensionprijs (€ per maand)</label>
+                <input
+                  id="prijsBedrag"
+                  name="prijsBedrag"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  placeholder="bijv. 450"
+                  defaultValue={prijsLooptijd.prijs.bedrag ?? ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="prijsBtwModus" className="form-label">Btw</label>
+                <select
+                  id="prijsBtwModus"
+                  name="prijsBtwModus"
+                  className="input"
+                  defaultValue={prijsLooptijd.prijs.btwModus}
+                >
+                  {BTW_MODUS_OPTIES.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {BTW_MODUS_LABELS[opt]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="prijsBtwPercentage" className="form-label">Btw-percentage (%)</label>
+                <input
+                  id="prijsBtwPercentage"
+                  name="prijsBtwPercentage"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  className="input"
+                  placeholder="bijv. 21"
+                  defaultValue={prijsLooptijd.prijs.btwPercentage ?? ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="borgActief"
+                    value="true"
+                    defaultChecked={prijsLooptijd.borg.actief}
+                  />
+                  <span>Borg van toepassing</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="borgBedrag" className="form-label">Borgbedrag (€)</label>
+                <input
+                  id="borgBedrag"
+                  name="borgBedrag"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  placeholder="bijv. 500"
+                  defaultValue={prijsLooptijd.borg.bedrag ?? ''}
+                />
+                <span className="form-hint">Verplicht wanneer borg van toepassing is.</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Looptijd</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="looptijdAard" className="form-label">Aard van de looptijd</label>
+                <select
+                  id="looptijdAard"
+                  name="looptijdAard"
+                  className="input"
+                  value={looptijdAard}
+                  onChange={(e) => setLooptijdAard(e.target.value as LooptijdAard)}
+                >
+                  {LOOPTIJD_AARD_OPTIES.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {LOOPTIJD_AARD_LABELS[opt]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {looptijdAard === 'BEPAALD' && (
+                <div className="form-group">
+                  <label htmlFor="looptijdEinddatum" className="form-label">Einddatum *</label>
+                  <input
+                    id="looptijdEinddatum"
+                    name="looptijdEinddatum"
+                    type="date"
+                    className="input"
+                    defaultValue={prijsLooptijd.looptijd.einddatum ?? ''}
+                  />
+                  <span className="form-hint">Verplicht bij een contract voor bepaalde tijd.</span>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label htmlFor="looptijdMinimumperiode" className="form-label">Minimumperiode</label>
+                <input
+                  id="looptijdMinimumperiode"
+                  name="looptijdMinimumperiode"
+                  type="text"
+                  className="input"
+                  placeholder="bijv. 3 maanden"
+                  defaultValue={prijsLooptijd.looptijd.minimumperiode ?? ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="opzegtermijnWaarde" className="form-label">Opzegtermijn</label>
+                <div className="form-row">
+                  <input
+                    id="opzegtermijnWaarde"
+                    name="opzegtermijnWaarde"
+                    type="number"
+                    min="0"
+                    step="1"
+                    className="input"
+                    value={opzegWaarde}
+                    onChange={(e) => setOpzegWaarde(Number(e.target.value))}
+                  />
+                  <select
+                    name="opzegtermijnEenheid"
+                    className="input"
+                    value={opzegEenheid}
+                    onChange={(e) => setOpzegEenheid(e.target.value as OpzegtermijnEenheid)}
+                  >
+                    {OPZEGTERMIJN_EENHEID_OPTIES.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {OPZEGTERMIJN_EENHEID_LABELS[opt]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {opzegtermijnKort && (
+                  <span className="form-error">
+                    Waarschuwing: de opzegtermijn is korter dan 1 kalendermaand.
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="opzegtermijnSchriftelijk"
+                    value="true"
+                    defaultChecked={prijsLooptijd.looptijd.opzegtermijn.schriftelijk}
+                  />
+                  <span>Opzeggen dient schriftelijk te gebeuren</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="looptijdVerlenging" className="form-label">Verlenging</label>
+                <select
+                  id="looptijdVerlenging"
+                  name="looptijdVerlenging"
+                  className="input"
+                  defaultValue={prijsLooptijd.looptijd.verlenging}
+                >
+                  {VERLENGING_OPTIES.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {VERLENGING_LABELS[opt]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="proefperiodeActief"
+                    value="true"
+                    defaultChecked={prijsLooptijd.looptijd.proefperiode.actief}
+                  />
+                  <span>Proefperiode</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="proefperiodeDuur" className="form-label">Duur proefperiode</label>
+                <input
+                  id="proefperiodeDuur"
+                  name="proefperiodeDuur"
+                  type="text"
+                  className="input"
+                  placeholder="bijv. 1 maand"
+                  defaultValue={prijsLooptijd.looptijd.proefperiode.duur ?? ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="indexeringActief"
+                    value="true"
+                    defaultChecked={prijsLooptijd.looptijd.indexering.actief}
+                  />
+                  <span>Indexering van toepassing</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="indexeringGrondslag" className="form-label">Grondslag indexering</label>
+                <input
+                  id="indexeringGrondslag"
+                  name="indexeringGrondslag"
+                  type="text"
+                  className="input"
+                  placeholder="bijv. CBS-prijsindex"
+                  defaultValue={prijsLooptijd.looptijd.indexering.grondslag ?? ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="indexeringMoment" className="form-label">Moment indexering</label>
+                <select
+                  id="indexeringMoment"
+                  name="indexeringMoment"
+                  className="input"
+                  defaultValue={prijsLooptijd.looptijd.indexering.moment ?? ''}
+                >
+                  <option value="">Niet opgegeven</option>
+                  {INDEXERING_MOMENT_OPTIES.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {INDEXERING_MOMENT_LABELS[opt]}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </>
