@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { useActionState } from 'react'
-import { createAndLinkEigenaar } from './actions'
+import { createAndLinkPerson } from './actions'
 import SubmitButton from '@/components/SubmitButton'
 
 type State = { error?: string }
 
-export default function EigenaarAanmakenForm({ horseId }: { horseId: string }) {
-  const action = createAndLinkEigenaar.bind(null, horseId)
+export default function PersoonAanmakenForm({ horseId }: { horseId: string }) {
+  const action = createAndLinkPerson.bind(null, horseId)
 
   async function formAction(prev: State, formData: FormData): Promise<State> {
     const result = await action(formData)
@@ -37,8 +37,23 @@ export default function EigenaarAanmakenForm({ horseId }: { horseId: string }) {
         <div className="form-group">
           <label htmlFor="password" className="form-label">Tijdelijk wachtwoord *</label>
           <input id="password" name="password" type="password" className="input" placeholder="Minimaal 8 tekens" required minLength={8} />
-          <div className="form-hint">De eigenaar kan dit later zelf wijzigen.</div>
+          <div className="form-hint">De persoon kan dit later zelf wijzigen.</div>
         </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Rollen *</label>
+        <div style={{ display: 'flex', gap: 20, marginTop: 4 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input name="isOwner" type="checkbox" value="true" defaultChecked />
+            Eigenaar
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input name="isRider" type="checkbox" value="true" />
+            Bereider
+          </label>
+        </div>
+        <div className="form-hint">Kies minstens één rol. Een persoon kan beide rollen tegelijk vervullen.</div>
       </div>
 
       <div className="action-buttons">

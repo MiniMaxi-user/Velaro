@@ -62,17 +62,18 @@ export async function isAnyStableMember(userId: string): Promise<boolean> {
 }
 
 /**
- * Bestaat er een HorseOwner-rij die deze gebruiker als eigenaar van dit paard koppelt?
- * Gebruikt om de paardeigenaar (zonder stalrol) beperkte schrijfrechten te geven.
+ * Bestaat er een HorsePerson-rij die deze gebruiker als EIGENAAR (isOwner) van dit
+ * paard koppelt? Gebruikt om de paardeigenaar (zonder stalrol) beperkte rechten te
+ * geven (bv. wederpartij in een contract).
  */
 export async function isHorseOwner(
   userId: string,
   horseId: string
 ): Promise<boolean> {
-  const owner = await prisma.horseOwner.findUnique({
+  const person = await prisma.horsePerson.findUnique({
     where: { horseId_userId: { horseId, userId } },
   })
-  return owner !== null
+  return person?.isOwner === true
 }
 
 export async function canViewHorse(
@@ -85,12 +86,13 @@ export async function canViewHorse(
   })
   if (!horse) return false
 
-  const [member, owner] = await Promise.all([
+  const [member, person] = await Promise.all([
     isStableMember(userId, horse.stableId),
-    prisma.horseOwner.findUnique({
+    prisma.horsePerson.findUnique({
       where: { horseId_userId: { horseId, userId } },
     }),
   ])
 
-  return member || owner !== null
+  // Stallid, óf gekoppeld als eigenaar/bereider (minstens één rol actief).
+  return member || person !== null
 }

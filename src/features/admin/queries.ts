@@ -15,7 +15,7 @@ export async function getAdminDashboardStats() {
     prisma.user.count({
       where: {
         isPlatformAdmin: false,
-        horseOwnerships: { some: {} },
+        horsePeople: { some: { isOwner: true } },
       },
     }),
     prisma.stable.findMany({
@@ -105,13 +105,14 @@ export async function getHorseOwnerAccounts() {
   return prisma.user.findMany({
     where: {
       isPlatformAdmin: false,
-      horseOwnerships: { some: {} },
+      horsePeople: { some: { isOwner: true } },
     },
     include: {
       _count: {
-        select: { horseOwnerships: true },
+        select: { horsePeople: { where: { isOwner: true } } },
       },
-      horseOwnerships: {
+      horsePeople: {
+        where: { isOwner: true },
         include: {
           horse: {
             select: {

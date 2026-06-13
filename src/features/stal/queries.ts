@@ -35,8 +35,8 @@ export async function getHorseOwnersForStable(stableId: string): Promise<Paardei
  */
 export async function getHorseOwnersForStables(stableIds: string[]): Promise<Paardeigenaar[]> {
   if (stableIds.length === 0) return []
-  const ownerships = await prisma.horseOwner.findMany({
-    where: { horse: { stableId: { in: stableIds } } },
+  const ownerships = await prisma.horsePerson.findMany({
+    where: { isOwner: true, horse: { stableId: { in: stableIds } } },
     include: {
       user: { select: { id: true, name: true, email: true } },
       horse: { select: { name: true } },

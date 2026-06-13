@@ -96,12 +96,13 @@ export async function GET(req: NextRequest) {
   const eigenaarWhere = isAdmin
     ? {
         name: { contains: q, mode: 'insensitive' as const },
-        horseOwnerships: { some: {} },
+        horsePeople: { some: { isOwner: true } },
       }
     : {
         name: { contains: q, mode: 'insensitive' as const },
-        horseOwnerships: {
+        horsePeople: {
           some: {
+            isOwner: true,
             horse: { stableId: { in: stableIds } },
           },
         },
@@ -113,7 +114,8 @@ export async function GET(req: NextRequest) {
       id: true,
       name: true,
       email: true,
-      horseOwnerships: {
+      horsePeople: {
+        where: { isOwner: true },
         select: { horse: { select: { name: true } } },
         take: 2,
       },
@@ -122,7 +124,7 @@ export async function GET(req: NextRequest) {
   })
 
   for (const e of eigenaren) {
-    const horseNames = e.horseOwnerships.map((o) => o.horse.name).join(', ')
+    const horseNames = e.horsePeople.map((o) => o.horse.name).join(', ')
     resultaten.push({
       id: e.id,
       type: 'eigenaar',

@@ -24,13 +24,14 @@ export default async function NieuwContractPage({ params }: Props) {
 
   // Zonder gekoppelde eigenaar is er geen wederpartij te kiezen — terug naar de tab,
   // waar de knop de melding "Koppel eerst een eigenaar" toont.
-  if (horse.owners.length === 0) {
+  const eigenaren = horse.people.filter((p) => p.isOwner)
+  if (eigenaren.length === 0) {
     redirect(`/paarden/${id}?tab=contracten`)
   }
 
-  const owners = horse.owners.map((o) => ({
-    userId: o.user.id,
-    label: o.user.name ?? o.user.email,
+  const owners = eigenaren.map((p) => ({
+    userId: p.user.id,
+    label: p.user.name ?? p.user.email,
   }))
 
   const action = createStallingContract.bind(null, id)

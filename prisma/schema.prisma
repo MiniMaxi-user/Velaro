@@ -28,9 +28,9 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // Een gebruiker kan staf/eigenaar van stallen zijn én eigenaar van paarden.
+  // Een gebruiker kan staf/eigenaar van stallen zijn én eigenaar/bereider van paarden.
   stableMemberships StableMember[]
-  horseOwnerships   HorseOwner[]
+  horsePeople       HorsePerson[]
   messages          Message[]
   messageReads      MessageRead[]
   // Contracten waarin deze gebruiker de wederpartij (paardeigenaar) is.
@@ -131,11 +131,9 @@ model Horse {
   stableId String @db.Uuid
   stable   Stable @relation(fields: [stableId], references: [id], onDelete: Restrict)
 
-  // Eigenaar(s) van het paard. Many-to-many via HorseOwner.
-  owners HorseOwner[]
-
-  // Bereider(s) van het paard. Geen accountkoppeling (kan minderjarig zijn).
-  riders HorseRider[]
+  // Aan het paard gekoppelde personen (eigenaar en/of bereider). Account-gekoppeld
+  // via HorsePerson; rollen als aan/uit-vlaggen (isOwner / isRider).
+  people HorsePerson[]
 
   // Gezondheidsregistratie (stap 3)
   vaccinations    Vaccination[]
@@ -160,12 +158,19 @@ enum HorseSex {
   GELDING  // ruin
 }
 
-// Koppelt een paardeneigenaar aan een paard.
-// Dit bepaalt of iemand zijn/haar eigen paard mag zien (eigenaarstoegang).
-model HorseOwner {
+// Koppelt een persoon (account) aan een paard met een of beide rollen:
+// eigenaar (isOwner) en/of bereider (isRider). Zowel eigenaar als bereider
+// kan inloggen en krijgt leestoegang tot het gekoppelde paardprofiel.
+//
+// App-invariant: minstens één rol actief (isOwner || isRider). Een koppeling
+// zonder rol bestaat niet — bij het uitzetten van de laatste rol wordt de rij
+// verwijderd. Dit wordt afgedwongen in de app-laag (actions).
+model HorsePerson {
   id        String   @id @default(uuid()) @db.Uuid
   horseId   String   @db.Uuid
   userId    String   @db.Uuid
+  isOwner   Boolean  @default(false)
+  isRider   Boolean  @default(false)
   createdAt DateTime @default(now())
 
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
@@ -173,24 +178,6 @@ model HorseOwner {
 
   @@unique([horseId, userId])
   @@index([userId])
-}
-
-// Bereider van een paard. Heeft géén Velaro-account (kan minderjarig zijn).
-// "Minderjarig" wordt afgeleid uit dateOfBirth, niet apart opgeslagen.
-model HorseRider {
-  id          String    @id @default(uuid()) @db.Uuid
-  horseId     String    @db.Uuid
-  name        String
-  dateOfBirth DateTime? // optioneel; bepaalt of "Minderjarig" getoond wordt
-  phone       String?
-  email       String?
-  notes       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
-
-  @@index([horseId])
 }
 
 // ── Gezondheidsregistratie ───────────────────────────────────────────────────
@@ -370,8 +357,9 @@ enum ZorgType {
 // (full pension). Latere stories breiden uit met opties, prijs, looptijd, verzekering,
 // statusovergangen en de lease-familie. Houd dit datamodel daarom generiek.
 //
-// De wederpartij (counterpartyUserId) verwijst naar een User die via HorseOwner aan
-// het paard gekoppeld is — de paardeigenaar. Nullable tot er een eigenaar gekozen is.
+// De wederpartij (counterpartyUserId) verwijst naar een User die via HorsePerson
+// (isOwner = true) aan het paard gekoppeld is — de paardeigenaar. Nullable tot er
+// een eigenaar gekozen is.
 
 model Contract {
   id      String @id @default(uuid()) @db.Uuid
@@ -430,6 +418,6 @@ enum ContractStatus {
 // ── Autorisatie-logica (in app-laag, niet in schema) ─────────────────────────
 // Mag gebruiker U paard H zien?
 //   - U is OWNER/STAFF van H.stable  (via StableMember), OF
-//   - U is eigenaar van H            (via HorseOwner).
+//   - U is eigenaar of bereider van H (via HorsePerson).
 // Bewerken: stal OWNER/STAFF mag alles van paarden op hun stal;
-// paardeneigenaar krijgt (later) beperkte rechten op eigen paard.
+// paardeneigenaar/bereider krijgt beperkte (lees)rechten op eigen paard.
