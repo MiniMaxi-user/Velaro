@@ -177,6 +177,12 @@ Labels verwijderd:
 
 ---
 
+8. Vervolg
+
+Trigger de velaro-refiner agent
+
+---
+
 Beslissingsregels
 
 Als label "needs-human" aanwezig is:
