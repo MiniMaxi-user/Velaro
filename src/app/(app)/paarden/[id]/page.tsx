@@ -16,7 +16,12 @@ import StalGegevensPanel from '@/features/paarden/StalGegevensPanel'
 import VoederschemaPanel from '@/features/paarden/VoederschemaPanel'
 import PaardDetailTabs from '@/features/paarden/PaardDetailTabs'
 import EigendomBadge from '@/features/paarden/EigendomBadge'
-import { getContractsForHorse } from '@/features/contracten/queries'
+import {
+  getContractsForHorse,
+  getGezondheidsplichtNaleving,
+  type NalevingRegel,
+} from '@/features/contracten/queries'
+import { leesGezondheidsplicht } from '@/features/contracten/gezondheidsplicht'
 import ContractenPanel from '@/features/contracten/ContractenPanel'
 
 interface Props {
@@ -62,6 +67,17 @@ export default async function PaardDetailPage({ params }: Props) {
 
   const canEdit = role !== null
   const canDelete = role === 'OWNER'
+
+  // Entings- & gezondheidsplicht-naleving (STAL-07): per contract de afgesproken
+  // plicht afzetten tegen de echte gezondheidsregistratie van het paard.
+  const nalevingEntries = await Promise.all(
+    contracten.map(async (c): Promise<[string, NalevingRegel[]]> => {
+      const plicht = leesGezondheidsplicht(c.config)
+      const regels = await getGezondheidsplichtNaleving(id, plicht)
+      return [c.id, regels]
+    }),
+  )
+  const naleving: Record<string, NalevingRegel[]> = Object.fromEntries(nalevingEntries)
 
   const leeftijd = horse.dateOfBirth ? berekenLeeftijd(new Date(horse.dateOfBirth)) : null
 
@@ -207,6 +223,7 @@ export default async function PaardDetailPage({ params }: Props) {
             horseId={id}
             contracts={contracten}
             hasOwners={heeftEigenaar}
+            naleving={naleving}
           />
         )
 

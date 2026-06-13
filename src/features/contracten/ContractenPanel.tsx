@@ -1,9 +1,15 @@
+import { Fragment } from 'react'
 import { formatDatum } from '@/features/paarden/paardHelpers'
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_BADGE,
   contractTypeLabel,
 } from './contractHelpers'
+import {
+  NALEVING_STATUS_LABELS,
+  NALEVING_STATUS_BADGE,
+} from './gezondheidsplicht'
+import type { NalevingRegel } from './queries'
 import NieuwContractKnop from './NieuwContractKnop'
 import ContractActies from './ContractActies'
 import type { ContractStatus } from '@prisma/client'
@@ -21,10 +27,14 @@ export default function ContractenPanel({
   horseId,
   contracts,
   hasOwners,
+  naleving = {},
 }: {
   horseId: string
   contracts: ContractRow[]
   hasOwners: boolean
+  // Per contract-id de nalevingsregels (STAL-07). Lege/ontbrekende lijst = geen
+  // actieve gezondheidsplicht om te tonen.
+  naleving?: Record<string, NalevingRegel[]>
 }) {
   return (
     <div className="panel">
@@ -47,29 +57,57 @@ export default function ContractenPanel({
               </tr>
             </thead>
             <tbody>
-              {contracts.map((c) => (
-                <tr key={c.id}>
-                  <td>{contractTypeLabel(c.type)}</td>
-                  <td className="gezondheid-tabel__muted">
-                    {c.counterparty
-                      ? c.counterparty.name ?? c.counterparty.email
-                      : '—'}
-                  </td>
-                  <td className="gezondheid-tabel__muted">
-                    {c.startDate ? formatDatum(new Date(c.startDate)) : '—'}
-                  </td>
-                  <td>
-                    <span className={`badge ${CONTRACT_STATUS_BADGE[c.status]}`}>
-                      {CONTRACT_STATUS_LABELS[c.status]}
-                    </span>
-                  </td>
-                  <td>
-                    {c.status === 'CONCEPT' && (
-                      <ContractActies horseId={horseId} contractId={c.id} />
+              {contracts.map((c) => {
+                const regels = naleving[c.id] ?? []
+                return (
+                  <Fragment key={c.id}>
+                    <tr>
+                      <td>{contractTypeLabel(c.type)}</td>
+                      <td className="gezondheid-tabel__muted">
+                        {c.counterparty
+                          ? c.counterparty.name ?? c.counterparty.email
+                          : '—'}
+                      </td>
+                      <td className="gezondheid-tabel__muted">
+                        {c.startDate ? formatDatum(new Date(c.startDate)) : '—'}
+                      </td>
+                      <td>
+                        <span className={`badge ${CONTRACT_STATUS_BADGE[c.status]}`}>
+                          {CONTRACT_STATUS_LABELS[c.status]}
+                        </span>
+                      </td>
+                      <td>
+                        {c.status === 'CONCEPT' && (
+                          <ContractActies horseId={horseId} contractId={c.id} />
+                        )}
+                      </td>
+                    </tr>
+                    {regels.length > 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ paddingTop: 0 }}>
+                          <div className="contract-naleving">
+                            <div className="contract-naleving__titel">
+                              Entings- &amp; gezondheidsplicht
+                            </div>
+                            <ul className="contract-naleving__lijst">
+                              {regels.map((r, i) => (
+                                <li key={i} className="contract-naleving__regel">
+                                  <span className="contract-naleving__onderdeel">
+                                    {r.onderdeel}
+                                  </span>
+                                  <span className={`badge ${NALEVING_STATUS_BADGE[r.status]}`}>
+                                    {NALEVING_STATUS_LABELS[r.status]}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                </tr>
-              ))}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         )}

@@ -28,6 +28,11 @@ import {
   type PrijsLooptijdConfig,
 } from './prijsLooptijd'
 import type { VerzekeringAansprakelijkheidConfig } from './verzekeringAansprakelijkheid'
+import {
+  VACCINATIE_SOORT_OPTIES,
+  type GezondheidsplichtConfig,
+  type VaccinatieSoort,
+} from './gezondheidsplicht'
 
 // Leest de huisvesting-opties (STAL-03) uit het formulier. Onbekende boxtypes
 // vallen terug op null; lege tekstvelden worden genormaliseerd naar null.
@@ -215,6 +220,70 @@ function leesVerzekeringAansprakelijkheidForm(
   }
 }
 
+// Leest de entings- & gezondheidsplicht (STAL-07) uit het formulier en valideert
+// server-side. De gegevens worden onder config.gezondheidsplicht bewaard. Lege/
+// uitgeschakelde onderdelen worden genormaliseerd opgeslagen (vlag uit -> bijbehorende
+// detailvelden null). Gooit bij ongeldige invoer een fout (opslaan wordt geweigerd).
+function leesGezondheidsplichtForm(formData: FormData): GezondheidsplichtConfig {
+  // ── Vaccinatieplicht ──
+  const vaccinatieActief = formData.get('vaccinatieActief') === 'true'
+  const aangevinkteSoorten = new Set(
+    formData.getAll('vaccinatieSoorten').map((v) => String(v)),
+  )
+  const soorten: VaccinatieSoort[] = VACCINATIE_SOORT_OPTIES.filter((s) =>
+    aangevinkteSoorten.has(s),
+  )
+  const vaccinatieInterval = leesNietNegatiefGetal(
+    formData.get('vaccinatieInterval'),
+    'Het vaccinatie-interval',
+  )
+
+  // ── Ontworming / mestonderzoek ──
+  const ontwormingActief = formData.get('ontwormingActief') === 'true'
+  const ontwormingBeleid = (formData.get('ontwormingBeleid') as string)?.trim() || null
+  const ontwormingInterval = leesNietNegatiefGetal(
+    formData.get('ontwormingInterval'),
+    'Het ontwormings-interval',
+  )
+
+  // ── Hoefsmid ──
+  const hoefsmidActief = formData.get('hoefsmidActief') === 'true'
+  const hoefsmidInterval = leesNietNegatiefGetal(
+    formData.get('hoefsmidInterval'),
+    'Het hoefsmid-interval',
+  )
+
+  // ── Dierenarts-drempel ──
+  const drempelActief = formData.get('dierenartsDrempelActief') === 'true'
+  const drempelBedrag = leesNietNegatiefGetal(
+    formData.get('dierenartsDrempelBedrag'),
+    'De dierenarts-drempel',
+  )
+  const meldingsplichtEigenaar = formData.get('dierenartsMeldingsplicht') === 'true'
+
+  return {
+    vaccinatie: {
+      actief: vaccinatieActief,
+      soorten: vaccinatieActief ? soorten : [],
+      intervalMaanden: vaccinatieActief ? vaccinatieInterval : null,
+    },
+    ontworming: {
+      actief: ontwormingActief,
+      beleid: ontwormingActief ? ontwormingBeleid : null,
+      intervalMaanden: ontwormingActief ? ontwormingInterval : null,
+    },
+    hoefsmid: {
+      actief: hoefsmidActief,
+      intervalWeken: hoefsmidActief ? hoefsmidInterval : null,
+    },
+    dierenartsDrempel: {
+      actief: drempelActief,
+      bedrag: drempelActief ? drempelBedrag : null,
+      meldingsplichtEigenaar: drempelActief ? meldingsplichtEigenaar : false,
+    },
+  }
+}
+
 // Autorisatie: alleen OWNER/STAFF van de stal van het paard mag contracten van dat
 // paard aanmaken. Server-side afgedwongen — paardeigenaren worden geweigerd.
 async function getAuthorizedStaff(horseId: string) {
@@ -320,6 +389,8 @@ export async function updateStallingContract(
   // Verzekering & aansprakelijkheid (STAL-06). Optionele velden mogen leeg blijven;
   // de compleetheid van de verplichte velden is een poort bij aanbieden (STAL-08).
   const verzekeringAansprakelijkheid = leesVerzekeringAansprakelijkheidForm(formData)
+  // Entings- & gezondheidsplicht (STAL-07) — server-side gevalideerd in de reader.
+  const gezondheidsplicht = leesGezondheidsplichtForm(formData)
   const bestaandeConfig =
     contract.config && typeof contract.config === 'object' && !Array.isArray(contract.config)
       ? (contract.config as Record<string, unknown>)
@@ -332,6 +403,7 @@ export async function updateStallingContract(
     faciliteiten: dienstpakket.faciliteiten.geselecteerd,
     prijsLooptijd,
     verzekeringAansprakelijkheid,
+    gezondheidsplicht,
   }
 
   await prisma.contract.update({

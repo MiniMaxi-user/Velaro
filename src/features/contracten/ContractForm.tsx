@@ -28,6 +28,11 @@ import {
   type OpzegtermijnEenheid,
 } from './prijsLooptijd'
 import type { VerzekeringAansprakelijkheidConfig } from './verzekeringAansprakelijkheid'
+import {
+  VACCINATIE_SOORT_OPTIES,
+  VACCINATIE_SOORT_LABELS,
+  type GezondheidsplichtConfig,
+} from './gezondheidsplicht'
 
 type OwnerOption = { userId: string; label: string }
 
@@ -49,6 +54,7 @@ export default function ContractForm({
   voederschema,
   prijsLooptijd,
   verzekeringAansprakelijkheid,
+  gezondheidsplicht,
   submitLabel = 'Concept aanmaken',
 }: {
   horseId: string
@@ -67,6 +73,8 @@ export default function ContractForm({
   prijsLooptijd?: PrijsLooptijdConfig
   // Wanneer meegegeven, toont het formulier de sectie "Verzekering & aansprakelijkheid".
   verzekeringAansprakelijkheid?: VerzekeringAansprakelijkheidConfig
+  // Wanneer meegegeven, toont het formulier de sectie "Entings- & gezondheidsplicht".
+  gezondheidsplicht?: GezondheidsplichtConfig
   submitLabel?: string
 }) {
   const ruwvoerRef = useRef<HTMLInputElement>(null)
@@ -784,6 +792,192 @@ export default function ContractForm({
                     verzekeringAansprakelijkheid.aansprakelijkheid.bedrijfsmatigGebruikNotitie ?? ''
                   }
                 />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {gezondheidsplicht && (
+        <>
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Entings- &amp; gezondheidsplicht</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="vaccinatieActief"
+                    value="true"
+                    defaultChecked={gezondheidsplicht.vaccinatie.actief}
+                  />
+                  <span>Vaccinatieplicht van toepassing</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="vaccinatieInterval" className="form-label">
+                  Vaccinatie-interval (maanden)
+                </label>
+                <input
+                  id="vaccinatieInterval"
+                  name="vaccinatieInterval"
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="input"
+                  placeholder="bijv. 6"
+                  defaultValue={gezondheidsplicht.vaccinatie.intervalMaanden ?? ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <span className="form-label">Verplichte vaccinaties</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--velaro-space-2)' }}>
+                  {VACCINATIE_SOORT_OPTIES.map((opt) => (
+                    <label className="profiel-checkbox-label" key={opt}>
+                      <input
+                        className="profiel-checkbox"
+                        type="checkbox"
+                        name="vaccinatieSoorten"
+                        value={opt}
+                        defaultChecked={gezondheidsplicht.vaccinatie.soorten.includes(opt)}
+                      />
+                      <span>{VACCINATIE_SOORT_LABELS[opt]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Ontworming &amp; mestonderzoek</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="ontwormingActief"
+                    value="true"
+                    defaultChecked={gezondheidsplicht.ontworming.actief}
+                  />
+                  <span>Ontwormings-/mestonderzoekplicht van toepassing</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="ontwormingInterval" className="form-label">
+                  Interval (maanden)
+                </label>
+                <input
+                  id="ontwormingInterval"
+                  name="ontwormingInterval"
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="input"
+                  placeholder="bijv. 3"
+                  defaultValue={gezondheidsplicht.ontworming.intervalMaanden ?? ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="ontwormingBeleid" className="form-label">Beleid</label>
+                <input
+                  id="ontwormingBeleid"
+                  name="ontwormingBeleid"
+                  type="text"
+                  className="input"
+                  placeholder="bijv. selectief ontwormen o.b.v. mestonderzoek"
+                  defaultValue={gezondheidsplicht.ontworming.beleid ?? ''}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Hoefverzorging</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="hoefsmidActief"
+                    value="true"
+                    defaultChecked={gezondheidsplicht.hoefsmid.actief}
+                  />
+                  <span>Hoefsmidplicht van toepassing</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="hoefsmidInterval" className="form-label">
+                  Hoefsmid-interval (weken)
+                </label>
+                <input
+                  id="hoefsmidInterval"
+                  name="hoefsmidInterval"
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="input"
+                  placeholder="bijv. 8"
+                  defaultValue={gezondheidsplicht.hoefsmid.intervalWeken ?? ''}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Dierenarts-drempel</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="dierenartsDrempelActief"
+                    value="true"
+                    defaultChecked={gezondheidsplicht.dierenartsDrempel.actief}
+                  />
+                  <span>Drempel voor voorafgaande toestemming van toepassing</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="dierenartsDrempelBedrag" className="form-label">
+                  Drempelbedrag (€)
+                </label>
+                <input
+                  id="dierenartsDrempelBedrag"
+                  name="dierenartsDrempelBedrag"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  placeholder="bijv. 250"
+                  defaultValue={gezondheidsplicht.dierenartsDrempel.bedrag ?? ''}
+                />
+                <span className="form-hint">
+                  Boven dit bedrag is voorafgaande toestemming van de eigenaar vereist.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="dierenartsMeldingsplicht"
+                    value="true"
+                    defaultChecked={gezondheidsplicht.dierenartsDrempel.meldingsplichtEigenaar}
+                  />
+                  <span>Meldingsplicht aan de eigenaar</span>
+                </label>
               </div>
             </div>
           </div>
