@@ -34,6 +34,9 @@ export async function getHorse(id: string) {
           user: { select: { id: true, name: true, email: true } },
         },
       },
+      riders: {
+        orderBy: { createdAt: 'asc' },
+      },
       stable: {
         select: {
           id: true,

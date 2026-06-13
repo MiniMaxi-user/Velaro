@@ -30,3 +30,12 @@ export function formatDateForInput(date: Date | null): string {
   if (!date) return ''
   return new Date(date).toISOString().split('T')[0]
 }
+
+/**
+ * Leidt af of een bereider minderjarig is (< 18 jaar op vandaag).
+ * Geen geboortedatum → null (geen badge tonen).
+ */
+export function isMinderjarig(dateOfBirth: Date | null | undefined): boolean | null {
+  if (!dateOfBirth) return null
+  return berekenLeeftijd(new Date(dateOfBirth)) < 18
+}

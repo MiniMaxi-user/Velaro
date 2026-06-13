@@ -61,6 +61,20 @@ export async function isAnyStableMember(userId: string): Promise<boolean> {
   return memberships.length > 0
 }
 
+/**
+ * Bestaat er een HorseOwner-rij die deze gebruiker als eigenaar van dit paard koppelt?
+ * Gebruikt om de paardeigenaar (zonder stalrol) beperkte schrijfrechten te geven.
+ */
+export async function isHorseOwner(
+  userId: string,
+  horseId: string
+): Promise<boolean> {
+  const owner = await prisma.horseOwner.findUnique({
+    where: { horseId_userId: { horseId, userId } },
+  })
+  return owner !== null
+}
+
 export async function canViewHorse(
   userId: string,
   horseId: string

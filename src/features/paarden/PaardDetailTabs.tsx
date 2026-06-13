@@ -8,7 +8,7 @@ export type PaardTabId = 'algemeen' | 'gezondheid' | 'eigenaren' | 'voederschema
 const TABS: { id: PaardTabId; label: string }[] = [
   { id: 'algemeen', label: 'Algemeen' },
   { id: 'gezondheid', label: 'Gezondheid' },
-  { id: 'eigenaren', label: 'Eigenaren' },
+  { id: 'eigenaren', label: 'Eigenaar & bereider' },
   { id: 'voederschema', label: 'Voederschema' },
   { id: 'berichten', label: 'Berichten' },
 ]

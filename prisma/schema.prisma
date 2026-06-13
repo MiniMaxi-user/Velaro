@@ -126,6 +126,9 @@ model Horse {
   // Eigenaar(s) van het paard. Many-to-many via HorseOwner.
   owners HorseOwner[]
 
+  // Bereider(s) van het paard. Geen accountkoppeling (kan minderjarig zijn).
+  riders HorseRider[]
+
   // Gezondheidsregistratie (stap 3)
   vaccinations    Vaccination[]
   dewormings      Deworming[]
@@ -161,6 +164,24 @@ model HorseOwner {
 
   @@unique([horseId, userId])
   @@index([userId])
+}
+
+// Bereider van een paard. Heeft géén Velaro-account (kan minderjarig zijn).
+// "Minderjarig" wordt afgeleid uit dateOfBirth, niet apart opgeslagen.
+model HorseRider {
+  id          String    @id @default(uuid()) @db.Uuid
+  horseId     String    @db.Uuid
+  name        String
+  dateOfBirth DateTime? // optioneel; bepaalt of "Minderjarig" getoond wordt
+  phone       String?
+  email       String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@index([horseId])
 }
 
 // ── Gezondheidsregistratie ───────────────────────────────────────────────────

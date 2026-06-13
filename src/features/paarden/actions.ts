@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { getStableRole } from '@/lib/auth/authorization'
+import { getStableRole, isHorseOwner } from '@/lib/auth/authorization'
 import type { HorseSex } from '@prisma/client'
 import { getUserStable } from './queries'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -188,6 +188,119 @@ export async function createAndLinkEigenaar(
 
   revalidatePath(`/paarden/${horseId}`)
   redirect(`/paarden/${horseId}`)
+}
+
+// ── Bereiders (HorseRider) ───────────────────────────────────────────────────
+
+function parseRiderFormData(formData: FormData) {
+  const dateOfBirthStr = (formData.get('dateOfBirth') as string)?.trim()
+  return {
+    dateOfBirth: dateOfBirthStr ? new Date(dateOfBirthStr) : null,
+    phone: (formData.get('phone') as string)?.trim() || null,
+    email: (formData.get('email') as string)?.trim() || null,
+    notes: (formData.get('notes') as string)?.trim() || null,
+  }
+}
+
+export async function addHorseRider(
+  horseId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) return { error: 'Paard niet gevonden' }
+
+  const role = await getStableRole(user.id, horse.stableId)
+  if (!role) return { error: 'Geen toegang' }
+
+  const name = (formData.get('name') as string)?.trim()
+  if (!name) return { error: 'Naam is verplicht' }
+
+  await prisma.horseRider.create({
+    data: { horseId, name, ...parseRiderFormData(formData) },
+  })
+
+  revalidatePath(`/paarden/${horseId}`)
+}
+
+export async function updateHorseRider(
+  horseId: string,
+  riderId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) return { error: 'Paard niet gevonden' }
+
+  const role = await getStableRole(user.id, horse.stableId)
+  if (!role) return { error: 'Geen toegang' }
+
+  const rider = await prisma.horseRider.findUnique({ where: { id: riderId } })
+  if (!rider || rider.horseId !== horseId) return { error: 'Bereider niet gevonden' }
+
+  const name = (formData.get('name') as string)?.trim()
+  if (!name) return { error: 'Naam is verplicht' }
+
+  await prisma.horseRider.update({
+    where: { id: riderId },
+    data: { name, ...parseRiderFormData(formData) },
+  })
+
+  revalidatePath(`/paarden/${horseId}`)
+}
+
+/**
+ * Werkt UITSLUITEND het telefoonnummer van een bereider bij.
+ * Toegestaan voor staf/eigenaar van de stal én voor de paardeigenaar.
+ * Muteert bewust geen enkel ander veld.
+ */
+export async function updateRiderPhone(
+  horseId: string,
+  riderId: string,
+  formData: FormData
+): Promise<{ error: string } | undefined> {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) return { error: 'Paard niet gevonden' }
+
+  const role = await getStableRole(user.id, horse.stableId)
+  const isOwner = role ? false : await isHorseOwner(user.id, horseId)
+  if (!role && !isOwner) return { error: 'Geen toegang' }
+
+  const rider = await prisma.horseRider.findUnique({ where: { id: riderId } })
+  if (!rider || rider.horseId !== horseId) return { error: 'Bereider niet gevonden' }
+
+  const phone = (formData.get('phone') as string)?.trim() || null
+
+  await prisma.horseRider.update({
+    where: { id: riderId },
+    data: { phone },
+  })
+
+  revalidatePath(`/paarden/${horseId}`)
+}
+
+export async function removeHorseRider(
+  horseId: string,
+  riderId: string
+): Promise<{ error: string } | undefined> {
+  const user = await getCurrentUser()
+
+  const horse = await prisma.horse.findUnique({ where: { id: horseId } })
+  if (!horse) return { error: 'Paard niet gevonden' }
+
+  const role = await getStableRole(user.id, horse.stableId)
+  if (!role) return { error: 'Geen toegang' }
+
+  const rider = await prisma.horseRider.findUnique({ where: { id: riderId } })
+  if (!rider || rider.horseId !== horseId) return { error: 'Bereider niet gevonden' }
+
+  await prisma.horseRider.delete({ where: { id: riderId } })
+
+  revalidatePath(`/paarden/${horseId}`)
 }
 
 export async function saveFeedingPlan(
