@@ -115,6 +115,11 @@ model Horse {
   discipline      String?
   disciplineLevel String?
 
+  // Eigendom: true = stalpaard (eigendom van de stal zelf),
+  // false = pensionpaard (gestald door een externe eigenaar).
+  // Sluit elkaar uit: een stalpaard heeft geen externe HorseOwner-koppeling.
+  ownedByStable Boolean @default(true)
+
   // Welzijn / EU
   excludedFromConsumption     Boolean   @default(false)
   excludedFromConsumptionDate DateTime?

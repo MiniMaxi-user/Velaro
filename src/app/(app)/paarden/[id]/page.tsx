@@ -16,6 +16,7 @@ import BerichtenPanel from '@/features/berichten/BerichtenPanel'
 import StalGegevensPanel from '@/features/paarden/StalGegevensPanel'
 import VoederschemaPanel from '@/features/paarden/VoederschemaPanel'
 import PaardDetailTabs from '@/features/paarden/PaardDetailTabs'
+import EigendomBadge from '@/features/paarden/EigendomBadge'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -92,6 +93,7 @@ export default async function PaardDetailPage({ params }: Props) {
           <Link href="/paarden" className="detail-back">← Terug naar paarden</Link>
           <h1 className="detail-title">{horse.name}</h1>
           <div className="detail-meta">
+            <EigendomBadge ownedByStable={horse.ownedByStable} />
             {horse.breed && <span className="badge badge-navy">{horse.breed}</span>}
             {leeftijd !== null && <span className="badge badge-neutral">{leeftijd} jaar</span>}
             {horse.sex && <span className="badge badge-neutral">{GESLACHT_LABELS[horse.sex]}</span>}

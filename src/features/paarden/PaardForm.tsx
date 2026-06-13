@@ -93,6 +93,19 @@ export default function PaardForm({ horse }: Props) {
             defaultValue={horse?.boxNumber ?? ''}
           />
         </div>
+
+        <div className="form-group">
+          <label htmlFor="ownedByStable" className="form-label">Eigendom</label>
+          <select
+            id="ownedByStable"
+            name="ownedByStable"
+            className="input"
+            defaultValue={(horse?.ownedByStable ?? true) ? 'true' : 'false'}
+          >
+            <option value="true">Stalpaard (eigendom van de stal)</option>
+            <option value="false">Pension (externe eigenaar)</option>
+          </select>
+        </div>
       </div>
 
       {/* ── Sectie: Identificatie ── */}

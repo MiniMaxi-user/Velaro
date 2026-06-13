@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/session'
 import { getUserStable, getHorsesForStable, getHorsesForOwner } from '@/features/paarden/queries'
 import { berekenLeeftijd, GESLACHT_LABELS } from '@/features/paarden/paardHelpers'
+import EigendomBadge from '@/features/paarden/EigendomBadge'
 import { isPlatformAdmin, getMemberships } from '@/lib/auth/authorization'
 import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
 import { prisma } from '@/lib/prisma'
@@ -109,6 +110,9 @@ export default async function PaardenPage() {
                           {horse.ueln && (
                             <div className="cell-entity-sub">UELN {horse.ueln}</div>
                           )}
+                          <div style={{ marginTop: 4 }}>
+                            <EigendomBadge ownedByStable={horse.ownedByStable} />
+                          </div>
                         </div>
                       </Link>
                     </td>
@@ -249,6 +253,9 @@ export default async function PaardenPage() {
                           {horse.ueln && (
                             <div className="cell-entity-sub">UELN {horse.ueln}</div>
                           )}
+                          <div style={{ marginTop: 4 }}>
+                            <EigendomBadge ownedByStable={horse.ownedByStable} />
+                          </div>
                         </div>
                       </Link>
                     </td>
