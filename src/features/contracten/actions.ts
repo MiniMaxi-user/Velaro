@@ -27,6 +27,7 @@ import {
   type IndexeringMoment,
   type PrijsLooptijdConfig,
 } from './prijsLooptijd'
+import type { VerzekeringAansprakelijkheidConfig } from './verzekeringAansprakelijkheid'
 
 // Leest de huisvesting-opties (STAL-03) uit het formulier. Onbekende boxtypes
 // vallen terug op null; lege tekstvelden worden genormaliseerd naar null.
@@ -183,6 +184,37 @@ function leesPrijsLooptijdForm(formData: FormData): PrijsLooptijdConfig {
   }
 }
 
+// Leest het verzekerings- & aansprakelijkheidsblok (STAL-06) uit het formulier.
+// De gegevens worden onder config.verzekeringAansprakelijkheid bewaard. Niet-
+// verplichte velden mogen leeg blijven; de compleetheid van de verplichte velden
+// wordt niet hier afgedwongen maar via de validatiehulp (poort in STAL-08 #81),
+// zodat een onvolledig blok wél als concept opgeslagen kan worden.
+function leesVerzekeringAansprakelijkheidForm(
+  formData: FormData,
+): VerzekeringAansprakelijkheidConfig {
+  const polisnummer = (formData.get('verzPolisnummer') as string)?.trim() || null
+  const verzekeraar = (formData.get('verzVerzekeraar') as string)?.trim() || null
+  const bedrijfsmatigGebruikNotitie =
+    (formData.get('aansprBedrijfsmatigNotitie') as string)?.trim() || null
+
+  return {
+    verzekering: {
+      waVerzekeringEigenaar: formData.get('verzWaEigenaar') === 'true',
+      polisnummer,
+      verzekeraar,
+      brandverzekeringPaard: formData.get('verzBrandPaard') === 'true',
+      eigenaarVerzekertZelf: formData.get('verzEigenaarVerzekertZelf') === 'true',
+    },
+    aansprakelijkheid: {
+      risicoAcceptatieEigenaar: formData.get('aansprRisicoAcceptatie') === 'true',
+      bezitterAansprakelijkheid: formData.get('aansprBezitter') === 'true',
+      bedrijfsmatigGebruikNotitie,
+      zorgplichtStal: formData.get('aansprZorgplichtStal') === 'true',
+      aansprakelijkheidStalBeperkt: formData.get('aansprStalBeperkt') === 'true',
+    },
+  }
+}
+
 // Autorisatie: alleen OWNER/STAFF van de stal van het paard mag contracten van dat
 // paard aanmaken. Server-side afgedwongen — paardeigenaren worden geweigerd.
 async function getAuthorizedStaff(horseId: string) {
@@ -285,6 +317,9 @@ export async function updateStallingContract(
   const dienstpakket = leesDienstpakketForm(formData)
   // Prijs, borg & looptijd (STAL-05) — server-side gevalideerd in de reader.
   const prijsLooptijd = leesPrijsLooptijdForm(formData)
+  // Verzekering & aansprakelijkheid (STAL-06). Optionele velden mogen leeg blijven;
+  // de compleetheid van de verplichte velden is een poort bij aanbieden (STAL-08).
+  const verzekeringAansprakelijkheid = leesVerzekeringAansprakelijkheidForm(formData)
   const bestaandeConfig =
     contract.config && typeof contract.config === 'object' && !Array.isArray(contract.config)
       ? (contract.config as Record<string, unknown>)
@@ -296,6 +331,7 @@ export async function updateStallingContract(
     weidegang: dienstpakket.weidegang,
     faciliteiten: dienstpakket.faciliteiten.geselecteerd,
     prijsLooptijd,
+    verzekeringAansprakelijkheid,
   }
 
   await prisma.contract.update({

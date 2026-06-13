@@ -27,6 +27,7 @@ import {
   type LooptijdAard,
   type OpzegtermijnEenheid,
 } from './prijsLooptijd'
+import type { VerzekeringAansprakelijkheidConfig } from './verzekeringAansprakelijkheid'
 
 type OwnerOption = { userId: string; label: string }
 
@@ -47,6 +48,7 @@ export default function ContractForm({
   dienstpakket,
   voederschema,
   prijsLooptijd,
+  verzekeringAansprakelijkheid,
   submitLabel = 'Concept aanmaken',
 }: {
   horseId: string
@@ -63,6 +65,8 @@ export default function ContractForm({
   voederschema?: VoerVoorvulling | null
   // Wanneer meegegeven, toont het formulier de sectie "Prijs & looptijd".
   prijsLooptijd?: PrijsLooptijdConfig
+  // Wanneer meegegeven, toont het formulier de sectie "Verzekering & aansprakelijkheid".
+  verzekeringAansprakelijkheid?: VerzekeringAansprakelijkheidConfig
   submitLabel?: string
 }) {
   const ruwvoerRef = useRef<HTMLInputElement>(null)
@@ -619,6 +623,167 @@ export default function ContractForm({
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {verzekeringAansprakelijkheid && (
+        <>
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Verzekering</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="verzWaEigenaar"
+                    value="true"
+                    defaultChecked={verzekeringAansprakelijkheid.verzekering.waVerzekeringEigenaar}
+                  />
+                  <span>WA-/aansprakelijkheidsverzekering eigenaar *</span>
+                </label>
+                <span className="form-hint">
+                  Verplicht: de eigenaar dient een aansprakelijkheidsverzekering te hebben.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="verzPolisnummer" className="form-label">Polisnummer *</label>
+                <input
+                  id="verzPolisnummer"
+                  name="verzPolisnummer"
+                  type="text"
+                  className="input"
+                  placeholder="bijv. 1234567"
+                  defaultValue={verzekeringAansprakelijkheid.verzekering.polisnummer ?? ''}
+                />
+                <span className="form-hint">Verplicht voordat het contract aangeboden wordt.</span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="verzVerzekeraar" className="form-label">Verzekeraar/maatschappij *</label>
+                <input
+                  id="verzVerzekeraar"
+                  name="verzVerzekeraar"
+                  type="text"
+                  className="input"
+                  placeholder="bijv. Hippo Verzekeringen"
+                  defaultValue={verzekeringAansprakelijkheid.verzekering.verzekeraar ?? ''}
+                />
+                <span className="form-hint">Verplicht voordat het contract aangeboden wordt.</span>
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="verzEigenaarVerzekertZelf"
+                    value="true"
+                    defaultChecked={verzekeringAansprakelijkheid.verzekering.eigenaarVerzekertZelf}
+                  />
+                  <span>De eigenaar verzekert het paard zelf</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="verzBrandPaard"
+                    value="true"
+                    defaultChecked={verzekeringAansprakelijkheid.verzekering.brandverzekeringPaard}
+                  />
+                  <span>Brandverzekering paard van toepassing</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+            <div className="form-section-title">Aansprakelijkheid</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="aansprRisicoAcceptatie"
+                    value="true"
+                    defaultChecked={
+                      verzekeringAansprakelijkheid.aansprakelijkheid.risicoAcceptatieEigenaar
+                    }
+                  />
+                  <span>Risico-acceptatie eigenaar *</span>
+                </label>
+                <span className="form-hint">
+                  Verplicht: de eigenaar accepteert het risico van stalling.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="aansprBezitter"
+                    value="true"
+                    defaultChecked={
+                      verzekeringAansprakelijkheid.aansprakelijkheid.bezitterAansprakelijkheid
+                    }
+                  />
+                  <span>Bezitter-aansprakelijkheid (art. 6:179 BW)</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="aansprZorgplichtStal"
+                    value="true"
+                    defaultChecked={
+                      verzekeringAansprakelijkheid.aansprakelijkheid.zorgplichtStal
+                    }
+                  />
+                  <span>Zorgplicht stal vastgelegd</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label className="profiel-checkbox-label">
+                  <input
+                    className="profiel-checkbox"
+                    type="checkbox"
+                    name="aansprStalBeperkt"
+                    value="true"
+                    defaultChecked={
+                      verzekeringAansprakelijkheid.aansprakelijkheid.aansprakelijkheidStalBeperkt
+                    }
+                  />
+                  <span>Aansprakelijkheid stal beperkt en gekoppeld aan dekking</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="aansprBedrijfsmatigNotitie" className="form-label">
+                  Notitie bedrijfsmatig gebruik (art. 6:181 BW)
+                </label>
+                <input
+                  id="aansprBedrijfsmatigNotitie"
+                  name="aansprBedrijfsmatigNotitie"
+                  type="text"
+                  className="input"
+                  placeholder="bij full pension zonder training: NVT"
+                  defaultValue={
+                    verzekeringAansprakelijkheid.aansprakelijkheid.bedrijfsmatigGebruikNotitie ?? ''
+                  }
+                />
               </div>
             </div>
           </div>

@@ -9,6 +9,7 @@ import { updateStallingContract } from '@/features/contracten/actions'
 import { leesHuisvesting } from '@/features/contracten/huisvesting'
 import { leesDienstpakket } from '@/features/contracten/dienstpakket'
 import { leesPrijsLooptijd } from '@/features/contracten/prijsLooptijd'
+import { leesVerzekeringAansprakelijkheid } from '@/features/contracten/verzekeringAansprakelijkheid'
 import { getFeedingPlan } from '@/features/paarden/queries'
 
 interface Props {
@@ -78,6 +79,9 @@ export default async function BewerkContractPage({ params }: Props) {
   // Prijs, borg & looptijd (STAL-05) uit de contract-config.
   const prijsLooptijd = leesPrijsLooptijd(contract.config)
 
+  // Verzekering & aansprakelijkheid (STAL-06) uit de contract-config.
+  const verzekeringAansprakelijkheid = leesVerzekeringAansprakelijkheid(contract.config)
+
   // Voorvulwaarden uit het voederschema van het paard; null wanneer er geen
   // FeedingPlan is, zodat de overnemen-knop in het formulier wordt uitgeschakeld.
   const feedingPlan = await getFeedingPlan(id)
@@ -109,6 +113,7 @@ export default async function BewerkContractPage({ params }: Props) {
         dienstpakket={dienstpakket}
         voederschema={voederschema}
         prijsLooptijd={prijsLooptijd}
+        verzekeringAansprakelijkheid={verzekeringAansprakelijkheid}
         submitLabel="Wijzigingen opslaan"
       />
     </main>
