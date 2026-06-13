@@ -9,13 +9,22 @@ Velaro is een open platform voor de hippische sector. We beginnen **klein en ger
 een SaaS voor **pensionstallen** rond één centraal **paardenprofiel**.
 
 Beachhead-doelgroep: **pensionstallen** (terugkerende omzet, veel paarden onder één dak).
-Géén marketplace, géén publieke API, géén AI-modules in de MVP. Die komen later.
+Géén publieke API, géén AI-modules in de MVP. Die komen later.
+
+> **Doorontwikkeling (vanaf juni 2026):** de MVP-kern staat. We zijn nu bewust
+> begonnen aan de **paardenlease-module** (zie `velaro-leasemodule.md`) — een
+> lease-marktplaats + contract + administratie rond het centrale paardprofiel.
+> Dit is de eerste feature die buiten de oorspronkelijke MVP-scope valt; de keuze
+> is gemaakt en vastgelegd. Marktplaats is daarmee niet langer "niet bouwen".
 
 De drie soorten gebruikers in de MVP:
 - **Staleigenaar** (`OWNER`) — beheert de stal en alle paarden erin.
 - **Stalmedewerker** (`STAFF`) — werkt mee op de stal, beperktere rechten.
 - **Paardeneigenaar** — ziet (alleen) het profiel van zijn/haar eigen paard(en).
 - **Platform-admin** — beheert stallen en eigenaren op platform-niveau (apart admin-gedeelte).
+- **Leaser** (doorontwikkeling, lease-module) — leaset een paard via een actieve
+  `Lease`; krijgt beperkte leestoegang tot dat paardprofiel, vergelijkbaar met de
+  paardeneigenaar-weergave. Geen stalbeheer-rechten.
 
 ## Tech-stack (vastgelegd — niet wijzigen zonder overleg)
 
@@ -152,8 +161,13 @@ Logo: `velaro_logo.png` (staat in `public/`).
    en **platform-admin** (eigenaren + quota beheren).
 5. ⬜ **Eigenaarscommunicatie + gedeeld profiel** — eigenaar ziet zijn paard.
 6. ⬜ **Facturatie** — maandelijkse stalling + extra's. Bewust als laatste.
+7. ⬜ **Paardenlease-module** (doorontwikkeling) — lease-marktplaats, contracten,
+   kostenverdeling, verzekering/aansprakelijkheid, kalender, notificaties.
+   Opgesplitst in 10 genummerde stories `[Lease 01]`…`[Lease 10]` onder epic #59
+   op het bord; fundament-eerst (datamodel + autorisatie vóór features).
+   Bron/visie: `velaro-leasemodule.md`.
 
-> Buiten de MVP, niet bouwen tot afgesproken: open API, marketplace, AI-modules,
+> Buiten scope, niet bouwen tot afgesproken: open API, AI-modules,
 > integraties (KNHS/FEI), wearables.
 
 ## Werkwijze met Claude Code
