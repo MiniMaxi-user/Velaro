@@ -65,12 +65,19 @@ function NavIcon({ name }: { name: string }) {
       <path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
     </svg>
   )
+  if (name === 'settings') return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="2.25" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M8 1.5v1.7M8 12.8v1.7M14.5 8h-1.7M3.2 8H1.5M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2M12.6 12.6l-1.2-1.2M4.6 4.6L3.4 3.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    </svg>
+  )
   return null
 }
 
 interface Props {
   isStableMember: boolean
   isPlatformAdmin: boolean
+  isOwner: boolean
   canManageStables: boolean
   userEmail: string | undefined
   userRole?: string
@@ -81,6 +88,7 @@ interface Props {
 export default function SidebarClient({
   isStableMember,
   isPlatformAdmin,
+  isOwner,
   canManageStables,
   userEmail,
   userRole,
@@ -107,6 +115,10 @@ export default function SidebarClient({
       { href: '/stal/contracten', label: 'Contracten', icon: 'contract', exact: false },
       { href: '/stal/leden', label: 'Team',          icon: 'team',      exact: false },
       { href: '/stal/taken', label: 'Taken',         icon: 'check',     exact: false },
+      // Alleen voor de OWNER van de actieve stal (#98).
+      ...(isOwner
+        ? [{ href: '/stal/instellingen', label: 'Instellingen', icon: 'settings', exact: false }]
+        : []),
     ]
     return links
   }
