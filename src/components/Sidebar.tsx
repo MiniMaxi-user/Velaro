@@ -1,7 +1,7 @@
 import { getAuthUser, getDbUser } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { getActiveStableId, ALLE_STALLEN } from '@/lib/active-stable'
-import { getMemberships } from '@/lib/auth/authorization'
+import { getMemberships, getStableRole } from '@/lib/auth/authorization'
 import SidebarClient from './SidebarClient'
 
 const ROL_LABELS: Record<string, string> = {
@@ -28,6 +28,14 @@ export default async function Sidebar() {
   const canManageStables = isPlatformAdmin || (dbUser?.maxStables ?? 0) > 0
 
   const activeMembership = memberships.find((m) => m.stableId === activeStableId)
+
+  // OWNER van de actieve stal? Bepaalt of de stal-instellingen-link zichtbaar is (#98).
+  // Bij "alle stallen" tonen we de stal-specifieke instellingen-link niet.
+  const isOwner =
+    activeStableId !== null &&
+    activeStableId !== ALLE_STALLEN &&
+    (await getStableRole(user.id, activeStableId)) === 'OWNER'
+
   let rolLabel = isPlatformAdmin
     ? 'Platform Admin'
     : activeStableId === ALLE_STALLEN
@@ -42,6 +50,7 @@ export default async function Sidebar() {
     <SidebarClient
       isStableMember={isStableMember}
       isPlatformAdmin={isPlatformAdmin}
+      isOwner={isOwner}
       canManageStables={canManageStables}
       userEmail={user.email}
       userRole={rolLabel}
