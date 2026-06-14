@@ -390,9 +390,36 @@ model Contract {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Gegenereerde PDF-documenten per versie (STAL-12). Bij aanbieden (STAL-08) en
+  // bij elke nieuwe versie (STAL-11) wordt een PDF naar Supabase Storage geschreven
+  // en hier als ContractDocument gekoppeld.
+  documents ContractDocument[]
+
   @@index([horseId])
   @@index([stableId])
   @@index([counterpartyUserId])
+}
+
+// ── Contract-PDF (STAL-12) ───────────────────────────────────────────────────
+// Per gegenereerde en opgeslagen contract-PDF één rij. De PDF zelf staat in
+// Supabase Storage (bucket voor contract-PDF's); hier bewaren we het storage-pad
+// (key binnen de bucket) plus het versienummer waarvoor de PDF is gegenereerd.
+// Eigenaar-inzage loopt via een signed URL, met dezelfde leesrechten als de
+// eigenaar-weergave van het paard (STAL-09).
+model ContractDocument {
+  id         String   @id @default(uuid()) @db.Uuid
+  contractId String   @db.Uuid
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  // Versie van het contract (Contract.currentVersion) op het moment van genereren.
+  version Int
+
+  // Pad/key van het bestand binnen de Supabase Storage-bucket.
+  storagePath String
+
+  createdAt DateTime @default(now())
+
+  @@index([contractId])
 }
 
 enum ContractFamily {

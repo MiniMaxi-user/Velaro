@@ -43,6 +43,11 @@ import {
   ontbrekendeAanbiedVelden,
   ontbrekendeVeldenSamenvatting,
 } from './aanbiedValidatie'
+import {
+  genereerEnSlaContractPdfOp,
+  getSignedUrlVoorContract,
+  renderContractPdfBuffer,
+} from './pdf'
 import type { ContractStatus, Prisma } from '@prisma/client'
 
 // Leest de huisvesting-opties (STAL-03) uit het formulier. Onbekende boxtypes
@@ -535,6 +540,10 @@ export async function offerContract(horseId: string, contractId: string) {
     }),
   ])
 
+  // PDF van de aangeboden versie genereren en in Supabase Storage opslaan (STAL-12),
+  // gekoppeld als ContractDocument aan deze versie. Na de geslaagde statusovergang.
+  await genereerEnSlaContractPdfOp(contractId)
+
   revalidatePath(`/paarden/${horseId}`)
   revalidatePath('/eigenaar')
 }
@@ -696,7 +705,7 @@ export async function createNewVersion(horseId: string, contractId: string) {
     ],
   }
 
-  await prisma.$transaction([
+  const [, nieuweVersie] = await prisma.$transaction([
     prisma.contract.update({
       where: { id: contractId },
       data: { status: 'VERVANGEN', config: vervangenConfig },
@@ -715,6 +724,10 @@ export async function createNewVersion(horseId: string, contractId: string) {
       },
     }),
   ])
+
+  // PDF van de nieuwe versie genereren en als ContractDocument koppelen (STAL-12),
+  // zodat de huidige versie altijd een opgeslagen document heeft.
+  await genereerEnSlaContractPdfOp(nieuweVersie.id)
 
   revalidatePath(`/paarden/${horseId}`)
 }
@@ -754,4 +767,89 @@ export async function rejectContract(contractId: string) {
 
   revalidatePath(`/paarden/${contract.horseId}`)
   revalidatePath('/eigenaar')
+}
+
+// ── PDF-preview & inzage (STAL-12, #85) ───────────────────────────────────────
+
+// Bouwt de partijen-/paardcontext voor een opgeslagen contract. Hergebruikt de
+// stal-, paard- en wederpartijgegevens zodat de PDF dezelfde namen toont als de UI.
+async function bouwPdfContextVoorContract(contractId: string) {
+  const contract = await prisma.contract.findUnique({
+    where: { id: contractId },
+    include: {
+      stable: { select: { name: true, address: true, postalCode: true, city: true } },
+      horse: { select: { name: true } },
+      counterparty: { select: { name: true, email: true } },
+    },
+  })
+  if (!contract) throw new Error('Contract niet gevonden')
+
+  const adresDelen = [
+    contract.stable.address,
+    [contract.stable.postalCode, contract.stable.city].filter(Boolean).join(' '),
+  ].filter((d) => d && d.trim().length > 0)
+
+  return {
+    contract,
+    context: {
+      stalNaam: contract.stable.name,
+      stalAdres: adresDelen.length > 0 ? adresDelen.join(', ') : null,
+      eigenaarNaam:
+        contract.counterparty?.name ?? contract.counterparty?.email ?? 'Onbekende eigenaar',
+      paardNaam: contract.horse.name,
+    },
+  }
+}
+
+// Preview-PDF vanuit het bewerkscherm (concept): genereert de PDF in-memory en geeft
+// hem als base64 terug, ZONDER op te slaan en ZONDER statuswissel. Server-side
+// afgedwongen: alleen OWNER/STAFF van de stal van het paard. Een paardeigenaar kan
+// dus geen PDF genereren van een concept.
+export async function previewContractPdf(
+  horseId: string,
+  contractId: string,
+): Promise<string> {
+  await getAuthorizedStaff(horseId)
+
+  const { contract, context } = await bouwPdfContextVoorContract(contractId)
+  if (contract.horseId !== horseId) {
+    throw new Error('Contract niet gevonden')
+  }
+
+  const buffer = await renderContractPdfBuffer(
+    {
+      currentVersion: contract.currentVersion,
+      startDate: contract.startDate,
+      config: contract.config,
+    },
+    context,
+  )
+  return buffer.toString('base64')
+}
+
+// Signed URL voor OWNER/STAFF om de opgeslagen PDF van een contract te openen op het
+// paardprofiel (contracten-tab). Server-side afgedwongen: alleen OWNER/STAFF van de
+// stal van het paard. Null wanneer er (nog) geen PDF is opgeslagen.
+export async function getContractPdfUrlVoorStaf(
+  horseId: string,
+  contractId: string,
+): Promise<string | null> {
+  await getAuthorizedStaff(horseId)
+
+  const contract = await prisma.contract.findUnique({ where: { id: contractId } })
+  if (!contract || contract.horseId !== horseId) {
+    throw new Error('Contract niet gevonden')
+  }
+
+  return getSignedUrlVoorContract(contractId)
+}
+
+// Signed URL voor de paardeigenaar om de opgeslagen PDF van een aangeboden contract
+// in te zien (sluit aan op STAL-09). Server-side afgedwongen: alleen de gekoppelde
+// wederpartij. Null wanneer er (nog) geen PDF is opgeslagen.
+export async function getContractPdfUrlVoorEigenaar(
+  contractId: string,
+): Promise<string | null> {
+  await getOwnerDecisionContract(contractId)
+  return getSignedUrlVoorContract(contractId)
 }

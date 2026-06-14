@@ -6,7 +6,9 @@ import { useState, useTransition } from 'react'
 import {
   createNewVersion,
   deleteStallingContract,
+  getContractPdfUrlVoorStaf,
   offerContract,
+  previewContractPdf,
 } from './actions'
 import type { OntbrekendBlok } from './aanbiedValidatie'
 import type { ContractStatus } from '@prisma/client'
@@ -37,6 +39,41 @@ export default function ContractActies({
 
   const compleet = ontbrekendeVelden.length === 0 && heeftWederpartij
   const aanbiedenDisabled = pending || !compleet
+
+  // Opent een PDF-buffer (base64) in een nieuw tabblad via een object-URL. Gebruikt
+  // voor de in-memory preview (STAL-12), die niet in Supabase Storage wordt opgeslagen.
+  function openBase64Pdf(base64: string) {
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+    window.open(url, '_blank')
+    // Geef de object-URL na een ruime marge weer vrij.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+
+  function handlePreview() {
+    setError(null)
+    startTransition(async () => {
+      try {
+        const base64 = await previewContractPdf(horseId, contractId)
+        openBase64Pdf(base64)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Preview genereren is mislukt.')
+      }
+    })
+  }
+
+  function handleOpenPdf() {
+    setError(null)
+    startTransition(async () => {
+      try {
+        const url = await getContractPdfUrlVoorStaf(horseId, contractId)
+        if (url) window.open(url, '_blank')
+        else setError('Er is nog geen opgeslagen PDF voor deze versie.')
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'PDF openen is mislukt.')
+      }
+    })
+  }
 
   function handleDelete() {
     if (!confirm('Weet je zeker dat je dit concept-contract wilt verwijderen?')) {
@@ -91,6 +128,19 @@ export default function ContractActies({
     })
   }
 
+  // Knop om de opgeslagen contract-PDF van deze versie te openen (STAL-12). Voor elke
+  // versie met een opgeslagen document (alle niet-CONCEPT-statussen).
+  const pdfOpenKnop = (
+    <button
+      type="button"
+      className="btn-ghost btn-ghost--sm"
+      onClick={handleOpenPdf}
+      disabled={pending}
+    >
+      {pending ? 'Bezig…' : 'PDF openen'}
+    </button>
+  )
+
   // Versionering (STAL-11): alleen vanuit AANGEBODEN of AFGEWEZEN.
   if (status === 'AANGEBODEN' || status === 'AFGEWEZEN') {
     return (
@@ -103,13 +153,22 @@ export default function ContractActies({
         >
           {pending ? 'Bezig…' : 'Nieuwe versie maken'}
         </button>
+        {pdfOpenKnop}
         {error && <span className="form-error">{error}</span>}
       </div>
     )
   }
 
   // Concept-acties.
-  if (status !== 'CONCEPT') return null
+  if (status !== 'CONCEPT') {
+    // GEACCEPTEERD / ACTIEF / VERVANGEN: alleen de opgeslagen PDF openen.
+    return (
+      <div className="gezondheid-tabel__acties">
+        {pdfOpenKnop}
+        {error && <span className="form-error">{error}</span>}
+      </div>
+    )
+  }
 
   return (
     <div className="gezondheid-tabel__acties">
@@ -132,6 +191,14 @@ export default function ContractActies({
       >
         Bewerken
       </Link>
+      <button
+        type="button"
+        className="btn-ghost btn-ghost--sm"
+        onClick={handlePreview}
+        disabled={pending}
+      >
+        {pending ? 'Bezig…' : 'Preview-PDF'}
+      </button>
       <button
         type="button"
         className="btn-ghost btn-ghost--sm"

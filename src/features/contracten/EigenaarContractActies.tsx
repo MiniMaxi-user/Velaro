@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { acceptContract, rejectContract } from './actions'
+import {
+  acceptContract,
+  getContractPdfUrlVoorEigenaar,
+  rejectContract,
+} from './actions'
 
 // Besluitknoppen van de paardeigenaar voor een aangeboden stallingscontract
 // (STAL-09, #82): "Accepteren" en "Afwijzen". Wordt alleen gerenderd wanneer er een
@@ -33,6 +37,19 @@ export default function EigenaarContractActies({
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Accepteren is mislukt.')
+      }
+    })
+  }
+
+  function handleViewPdf() {
+    setError(null)
+    startTransition(async () => {
+      try {
+        const url = await getContractPdfUrlVoorEigenaar(contractId)
+        if (url) window.open(url, '_blank')
+        else setError('Er is nog geen PDF beschikbaar voor dit contract.')
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'PDF inzien is mislukt.')
       }
     })
   }
@@ -74,6 +91,14 @@ export default function EigenaarContractActies({
           disabled={pending}
         >
           {pending ? 'Bezig…' : 'Afwijzen'}
+        </button>
+        <button
+          type="button"
+          className="btn-ghost btn-ghost--sm"
+          onClick={handleViewPdf}
+          disabled={pending}
+        >
+          {pending ? 'Bezig…' : 'Contract-PDF inzien'}
         </button>
       </div>
       {error && <span className="form-error">{error}</span>}
