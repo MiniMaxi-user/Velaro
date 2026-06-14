@@ -5,8 +5,12 @@ import { getHorsesForOwner, getFeedingPlan } from '@/features/paarden/queries'
 import { getMessagesForHorseView, getUnreadCountForHorseView } from '@/features/berichten/queries'
 import BerichtItem from '@/features/berichten/BerichtItem'
 import { getZorgActiesVoorPaard } from '@/features/gezondheid/queries'
-import { getAangebodenContractVoorEigenaar } from '@/features/contracten/queries'
+import {
+  getAangebodenContractVoorEigenaar,
+  getContractsForEigenaar,
+} from '@/features/contracten/queries'
 import ContractSamenvatting from '@/features/contracten/ContractSamenvatting'
+import ContractOverzicht from '@/features/contracten/ContractOverzicht'
 import EigenaarContractActies from '@/features/contracten/EigenaarContractActies'
 import { berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 
@@ -24,12 +28,14 @@ export default async function EigenaarPage() {
     zorgActiesPerPaard,
     voederschemaPerPaard,
     aangebodenContractPerPaard,
+    mijnContracten,
   ] = await Promise.all([
     Promise.all(horses.map((h) => getMessagesForHorseView(h.id, 6))),
     Promise.all(horses.map((h) => getUnreadCountForHorseView(user.id, h.id))),
     Promise.all(horses.map((h) => getZorgActiesVoorPaard(h.id, 60))),
     Promise.all(horses.map((h) => getFeedingPlan(h.id))),
     Promise.all(horses.map((h) => getAangebodenContractVoorEigenaar(h.id, user.id))),
+    getContractsForEigenaar(user.id),
   ])
 
   return (
@@ -52,6 +58,23 @@ export default async function EigenaarPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Contract-overzicht (STAL-13, #86): alle stallingscontracten waarvan deze
+              eigenaar de wederpartij is. Server-side gefilterd op counterpartyUserId,
+              dus uitsluitend contracten van de eigen paard(en). */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Mijn contracten</span>
+              <span className="badge badge-neutral">{mijnContracten.length}</span>
+            </div>
+            <div className="panel-body">
+              <ContractOverzicht
+                contracts={mijnContracten}
+                rol="EIGENAAR"
+                legeTekst="Je hebt nog geen stallingscontracten."
+              />
+            </div>
+          </div>
+
           {horses.map((horse, index) => {
             const leeftijd = horse.dateOfBirth ? berekenLeeftijd(new Date(horse.dateOfBirth)) : null
             const berichten = berichtenPerPaard[index]

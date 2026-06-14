@@ -53,6 +53,13 @@ function NavIcon({ name }: { name: string }) {
       <path d="M3 8v5h10V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
+  if (name === 'contract') return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M4 1.5h5L13 5v9.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+      <path d="M9 1.5V5h4" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+      <path d="M6 8.5h5M6 11h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    </svg>
+  )
   if (name === 'admin') return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -97,6 +104,7 @@ export default function SidebarClient({
         ? [{ href: '/stallen', label: 'Mijn stallen', icon: 'stallen', exact: false }]
         : []),
       { href: '/paarden',    label: 'Paarden',      icon: 'horse',     exact: false },
+      { href: '/stal/contracten', label: 'Contracten', icon: 'contract', exact: false },
       { href: '/stal/leden', label: 'Team',          icon: 'team',      exact: false },
       { href: '/stal/taken', label: 'Taken',         icon: 'check',     exact: false },
     ]

@@ -20,6 +20,41 @@ export async function getContractsForHorse(horseId: string) {
   })
 }
 
+// Haalt alle stallingscontracten van een stal op voor het stal-overzicht (STAL-13,
+// #86). Filtert op de actieve stal (stableId) en op de stalling-familie; lease valt
+// buiten deze story. Inclusief paard en wederpartij voor de overzichtsregels. Nieuwste
+// eerst. De huidige-versie-filtering gebeurt afgeleid in de weergave (huidigeVersies).
+export async function getContractsForStable(stableId: string) {
+  return prisma.contract.findMany({
+    where: { stableId, family: 'STALLING' },
+    include: {
+      horse: { select: { id: true, name: true } },
+      counterparty: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+// Haalt alle stallingscontracten op waarvan de opgegeven gebruiker de wederpartij is
+// (STAL-13, #86). Server-side afgedwongen autorisatie voor de eigenaar-weergave: er
+// wordt uitsluitend op counterpartyUserId = user.id gefilterd, zodat een eigenaar nooit
+// contracten van een ander paard/eigenaar kan opvragen. Concepten (status CONCEPT) zijn
+// nog niet aan de eigenaar aangeboden en worden uitgesloten. Stalling-familie; lease valt
+// buiten deze story. Inclusief paard voor de overzichtsregels. Nieuwste eerst.
+export async function getContractsForEigenaar(userId: string) {
+  return prisma.contract.findMany({
+    where: {
+      counterpartyUserId: userId,
+      family: 'STALLING',
+      status: { not: 'CONCEPT' },
+    },
+    include: {
+      horse: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 // Haalt het aan een eigenaar aangeboden contract voor een paard op (STAL-09, #82).
 // Geeft uitsluitend een contract terug dat status AANGEBODEN heeft én waarvan de
 // opgegeven gebruiker de gekoppelde wederpartij (counterpartyUserId) is. Zo ziet de
