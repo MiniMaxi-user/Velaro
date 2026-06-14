@@ -18,6 +18,8 @@ import {
   leesGezondheidsplicht,
   vaccinatieSoortLabel,
 } from './gezondheidsplicht'
+import { heeftBerijder, leesBerijder } from './berijder'
+import { formatDatum, isMinderjarig } from '@/features/paarden/paardHelpers'
 
 // Alleen-lezen samenvatting van de inhoud van een stallingscontract (STAL-09, #82).
 // Leest alle optieblokken defensief uit Contract.config met de bestaande lees-/
@@ -34,8 +36,16 @@ export default function ContractSamenvatting({
   const { prijs, borg, looptijd } = leesPrijsLooptijd(config)
   const { verzekering, aansprakelijkheid } = leesVerzekeringAansprakelijkheid(config)
   const gezondheid = leesGezondheidsplicht(config)
+  const berijder = leesBerijder(config)
 
   const jaNee = (v: boolean) => (v ? 'Ja' : 'Nee')
+
+  // Minderjarig-indicatie: alleen wanneer een geboortedatum is ingevuld waaruit
+  // volgt dat de berijder minderjarig is (hergebruik isMinderjarig uit paardHelpers).
+  const berijderGeboortedatum = berijder.geboortedatum
+    ? new Date(berijder.geboortedatum)
+    : null
+  const berijderMinderjarig = isMinderjarig(berijderGeboortedatum) === true
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -174,6 +184,25 @@ export default function ContractSamenvatting({
                   : 'Ja'
               }
             />
+          )}
+        </Blok>
+      )}
+
+      {heeftBerijder(berijder) && (
+        <Blok titel="Berijder">
+          <Veld
+            label="Naam"
+            waarde={
+              berijderMinderjarig
+                ? `${berijder.naam} (minderjarig)`
+                : (berijder.naam as string)
+            }
+          />
+          {berijderGeboortedatum && (
+            <Veld label="Geboortedatum" waarde={formatDatum(berijderGeboortedatum)} />
+          )}
+          {berijder.relatieTotEigenaar && (
+            <Veld label="Relatie tot eigenaar" waarde={berijder.relatieTotEigenaar} />
           )}
         </Blok>
       )}

@@ -33,6 +33,7 @@ import {
   VACCINATIE_SOORT_LABELS,
   type GezondheidsplichtConfig,
 } from './gezondheidsplicht'
+import type { BerijderConfig } from './berijder'
 
 type OwnerOption = { userId: string; label: string }
 
@@ -55,6 +56,7 @@ export default function ContractForm({
   prijsLooptijd,
   verzekeringAansprakelijkheid,
   gezondheidsplicht,
+  berijder,
   submitLabel = 'Concept aanmaken',
 }: {
   horseId: string
@@ -75,6 +77,8 @@ export default function ContractForm({
   verzekeringAansprakelijkheid?: VerzekeringAansprakelijkheidConfig
   // Wanneer meegegeven, toont het formulier de sectie "Entings- & gezondheidsplicht".
   gezondheidsplicht?: GezondheidsplichtConfig
+  // Wanneer meegegeven, toont het formulier de sectie "Berijder" (optioneel blok).
+  berijder?: BerijderConfig
   submitLabel?: string
 }) {
   const ruwvoerRef = useRef<HTMLInputElement>(null)
@@ -982,6 +986,57 @@ export default function ContractForm({
             </div>
           </div>
         </>
+      )}
+
+      {berijder && (
+        <div className="form-section" style={{ marginTop: 'var(--velaro-space-6)' }}>
+          <div className="form-section-title">Berijder</div>
+          <p className="form-hint" style={{ marginBottom: 'var(--velaro-space-3)' }}>
+            Optioneel. De berijder wordt alleen informatief op de overeenkomst benoemd
+            en ondertekent niet. Een (eventueel minderjarige) berijder blokkeert het
+            aanbieden van het contract niet.
+          </p>
+          <div className="form-grid">
+            <div className="form-group">
+              <label htmlFor="berijderNaam" className="form-label">Naam berijder</label>
+              <input
+                id="berijderNaam"
+                name="berijderNaam"
+                type="text"
+                className="input"
+                placeholder="bijv. Sanne de Vries"
+                defaultValue={berijder.naam ?? ''}
+              />
+              <span className="form-hint">Laat leeg als er geen berijder benoemd wordt.</span>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="berijderGeboortedatum" className="form-label">Geboortedatum</label>
+              <input
+                id="berijderGeboortedatum"
+                name="berijderGeboortedatum"
+                type="date"
+                className="input"
+                defaultValue={berijder.geboortedatum ?? ''}
+              />
+              <span className="form-hint">
+                Optioneel; gebruikt om een minderjarig-indicatie te tonen.
+              </span>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="berijderRelatie" className="form-label">Relatie tot eigenaar</label>
+              <input
+                id="berijderRelatie"
+                name="berijderRelatie"
+                type="text"
+                className="input"
+                placeholder="bijv. dochter, pupil"
+                defaultValue={berijder.relatieTotEigenaar ?? ''}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="action-buttons">

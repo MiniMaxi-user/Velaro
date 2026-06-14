@@ -33,6 +33,7 @@ import {
   type GezondheidsplichtConfig,
   type VaccinatieSoort,
 } from './gezondheidsplicht'
+import type { BerijderConfig } from './berijder'
 import { assertOvergangToegestaan, leesStatusHistorie } from './statusMachine'
 import {
   ontbrekendeAanbiedVelden,
@@ -290,6 +291,23 @@ function leesGezondheidsplichtForm(formData: FormData): GezondheidsplichtConfig 
   }
 }
 
+// Leest het berijder-blok (STAL-10) uit het formulier. De gegevens worden onder
+// config.berijder bewaard. Dit blok is volledig optioneel: een lege naam betekent
+// "geen berijder vastgelegd" en de detailvelden worden dan genormaliseerd naar null.
+function leesBerijderForm(formData: FormData): BerijderConfig {
+  const naam = (formData.get('berijderNaam') as string)?.trim() || null
+  const geboortedatum = (formData.get('berijderGeboortedatum') as string)?.trim() || null
+  const relatieTotEigenaar =
+    (formData.get('berijderRelatie') as string)?.trim() || null
+
+  // Zonder naam beschouwen we het blok als leeg en bewaren we geen detailvelden.
+  if (!naam) {
+    return { naam: null, geboortedatum: null, relatieTotEigenaar: null }
+  }
+
+  return { naam, geboortedatum, relatieTotEigenaar }
+}
+
 // Autorisatie: alleen OWNER/STAFF van de stal van het paard mag contracten van dat
 // paard aanmaken. Server-side afgedwongen — paardeigenaren worden geweigerd.
 async function getAuthorizedStaff(horseId: string) {
@@ -397,6 +415,8 @@ export async function updateStallingContract(
   const verzekeringAansprakelijkheid = leesVerzekeringAansprakelijkheidForm(formData)
   // Entings- & gezondheidsplicht (STAL-07) — server-side gevalideerd in de reader.
   const gezondheidsplicht = leesGezondheidsplichtForm(formData)
+  // Berijder (STAL-10) — optioneel optieblok, blokkeert het aanbieden niet.
+  const berijder = leesBerijderForm(formData)
   const bestaandeConfig =
     contract.config && typeof contract.config === 'object' && !Array.isArray(contract.config)
       ? (contract.config as Record<string, unknown>)
@@ -410,6 +430,7 @@ export async function updateStallingContract(
     prijsLooptijd,
     verzekeringAansprakelijkheid,
     gezondheidsplicht,
+    berijder,
   }
 
   await prisma.contract.update({
