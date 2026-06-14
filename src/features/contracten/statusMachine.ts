@@ -2,15 +2,17 @@ import type { ContractStatus } from '@prisma/client'
 
 // ── Statusmachine voor contracten (STAL-08, #81) ─────────────────────────────
 // Eén bron van waarheid voor de toegestane statusovergangen van een contract.
-// Voor deze story is alleen de overgang CONCEPT → AANGEBODEN relevant; de map is
-// zo opgezet dat latere stories (accepteren/afwijzen, versionering, beëindigen)
-// er overgangen aan toevoegen zonder de aanroepers te wijzigen.
+// STAL-08 (#81) introduceerde CONCEPT → AANGEBODEN; STAL-09 (#82) voegt het
+// besluit van de eigenaar toe: AANGEBODEN → ACTIEF (accepteren; v1 in één stap
+// rechtstreeks ACTIEF) en AANGEBODEN → AFGEWEZEN (afwijzen). De map is zo opgezet
+// dat latere stories (versionering, beëindigen) er overgangen aan toevoegen zonder
+// de aanroepers te wijzigen.
 
 // Toegestane vervolgstatussen per huidige status. Een lege lijst betekent dat er
 // (nog) geen overgang vanaf die status gedefinieerd is.
 export const TOEGESTANE_OVERGANGEN: Record<ContractStatus, ContractStatus[]> = {
   CONCEPT: ['AANGEBODEN'],
-  AANGEBODEN: [],
+  AANGEBODEN: ['ACTIEF', 'AFGEWEZEN'],
   GEACCEPTEERD: [],
   ACTIEF: [],
   OPGESCHORT: [],

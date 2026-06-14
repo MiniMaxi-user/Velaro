@@ -38,6 +38,7 @@ import {
   ontbrekendeAanbiedVelden,
   ontbrekendeVeldenSamenvatting,
 } from './aanbiedValidatie'
+import type { ContractStatus, Prisma } from '@prisma/client'
 
 // Leest de huisvesting-opties (STAL-03) uit het formulier. Onbekende boxtypes
 // vallen terug op null; lege tekstvelden worden genormaliseerd naar null.
@@ -510,5 +511,123 @@ export async function offerContract(horseId: string, contractId: string) {
   ])
 
   revalidatePath(`/paarden/${horseId}`)
+  revalidatePath('/eigenaar')
+}
+
+// ── Besluit van de paardeigenaar (STAL-09, #82) ──────────────────────────────
+// Spiegelbeeldige autorisatie t.o.v. getAuthorizedStaff: hier mag uitsluitend de
+// aan het contract gekoppelde wederpartij (de paardeigenaar, Contract.counterpartyUserId)
+// het contract accepteren of afwijzen. Staf/eigenaar van de stal kan dit niet via
+// deze acties — autorisatie wordt server-side afgedwongen, niet alleen in de UI.
+async function getOwnerDecisionContract(contractId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const contract = await prisma.contract.findUnique({ where: { id: contractId } })
+  if (!contract) throw new Error('Contract niet gevonden')
+
+  if (contract.counterpartyUserId !== user.id) {
+    throw new Error('Alleen de gekoppelde eigenaar kan dit contract beoordelen.')
+  }
+
+  return { user, contract }
+}
+
+// Legt een statusovergang van de eigenaar append-only vast in config.statusHistorie
+// en geeft de nieuwe config terug (bestaande config-sleutels blijven behouden).
+function metStatusHistorie(
+  config: Prisma.JsonValue | null,
+  van: ContractStatus,
+  naar: ContractStatus,
+  doorUserId: string,
+) {
+  const bestaandeConfig =
+    config && typeof config === 'object' && !Array.isArray(config)
+      ? (config as Record<string, unknown>)
+      : {}
+  const historie = leesStatusHistorie(config)
+  return {
+    ...bestaandeConfig,
+    statusHistorie: [
+      ...historie,
+      { van, naar, op: new Date().toISOString(), doorUserId },
+    ],
+  }
+}
+
+// Accepteren: AANGEBODEN → ACTIEF (v1 in één stap direct ACTIEF). Server-side
+// afgedwongen via de statusmachine-helper én de eigenaar-autorisatie. De stal
+// ontvangt hierover een melding via een Message op het paard.
+export async function acceptContract(contractId: string) {
+  const { user, contract } = await getOwnerDecisionContract(contractId)
+
+  // Statusmachine: accepteren mag alleen vanuit AANGEBODEN.
+  assertOvergangToegestaan(contract.status, 'ACTIEF')
+
+  const nieuweConfig = metStatusHistorie(contract.config, contract.status, 'ACTIEF', user.id)
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: contract.horseId },
+    select: { name: true },
+  })
+
+  await prisma.$transaction([
+    prisma.contract.update({
+      where: { id: contractId },
+      data: { status: 'ACTIEF', config: nieuweConfig },
+    }),
+    prisma.message.create({
+      data: {
+        horseId: contract.horseId,
+        authorId: user.id,
+        subject: 'Stallingscontract geaccepteerd',
+        body: `De eigenaar heeft het stallingscontract voor ${
+          horse?.name ?? 'het paard'
+        } geaccepteerd. Het contract is nu actief.`,
+      },
+    }),
+  ])
+
+  revalidatePath(`/paarden/${contract.horseId}`)
+  revalidatePath('/eigenaar')
+}
+
+// Afwijzen: AANGEBODEN → AFGEWEZEN (geen tegenvoorstel). Server-side afgedwongen
+// via de statusmachine-helper én de eigenaar-autorisatie. De stal ontvangt hierover
+// een melding via een Message op het paard.
+export async function rejectContract(contractId: string) {
+  const { user, contract } = await getOwnerDecisionContract(contractId)
+
+  // Statusmachine: afwijzen mag alleen vanuit AANGEBODEN.
+  assertOvergangToegestaan(contract.status, 'AFGEWEZEN')
+
+  const nieuweConfig = metStatusHistorie(contract.config, contract.status, 'AFGEWEZEN', user.id)
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: contract.horseId },
+    select: { name: true },
+  })
+
+  await prisma.$transaction([
+    prisma.contract.update({
+      where: { id: contractId },
+      data: { status: 'AFGEWEZEN', config: nieuweConfig },
+    }),
+    prisma.message.create({
+      data: {
+        horseId: contract.horseId,
+        authorId: user.id,
+        subject: 'Stallingscontract afgewezen',
+        body: `De eigenaar heeft het aangeboden stallingscontract voor ${
+          horse?.name ?? 'het paard'
+        } afgewezen.`,
+      },
+    }),
+  ])
+
+  revalidatePath(`/paarden/${contract.horseId}`)
   revalidatePath('/eigenaar')
 }

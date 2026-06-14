@@ -20,6 +20,26 @@ export async function getContractsForHorse(horseId: string) {
   })
 }
 
+// Haalt het aan een eigenaar aangeboden contract voor een paard op (STAL-09, #82).
+// Geeft uitsluitend een contract terug dat status AANGEBODEN heeft én waarvan de
+// opgegeven gebruiker de gekoppelde wederpartij (counterpartyUserId) is. Zo ziet de
+// eigenaar in zijn weergave alleen een te beoordelen aanbod voor zijn eigen paard.
+// Geen aanbod (of geen koppeling) → null, zodat de accepteer-/afwijs-acties niet
+// getoond worden.
+export async function getAangebodenContractVoorEigenaar(
+  horseId: string,
+  userId: string,
+) {
+  return prisma.contract.findFirst({
+    where: {
+      horseId,
+      status: 'AANGEBODEN',
+      counterpartyUserId: userId,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 // Eén regel in de nalevings-weergave: een actief plicht-onderdeel met de
 // vastgestelde status t.o.v. de gezondheidsregistratie van het paard.
 export type NalevingRegel = {

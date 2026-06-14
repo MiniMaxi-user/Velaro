@@ -5,6 +5,9 @@ import { getHorsesForOwner, getFeedingPlan } from '@/features/paarden/queries'
 import { getMessagesForHorseView, getUnreadCountForHorseView } from '@/features/berichten/queries'
 import BerichtItem from '@/features/berichten/BerichtItem'
 import { getZorgActiesVoorPaard } from '@/features/gezondheid/queries'
+import { getAangebodenContractVoorEigenaar } from '@/features/contracten/queries'
+import ContractSamenvatting from '@/features/contracten/ContractSamenvatting'
+import EigenaarContractActies from '@/features/contracten/EigenaarContractActies'
 import { berekenLeeftijd, formatDatum } from '@/features/paarden/paardHelpers'
 
 export default async function EigenaarPage() {
@@ -13,12 +16,20 @@ export default async function EigenaarPage() {
 
   const horses = await getHorsesForOwner(user.id)
 
-  // Laad berichten (stal + paard), ongelezen-tellers en zorgacties per paard parallel
-  const [berichtenPerPaard, ongelezenPerPaard, zorgActiesPerPaard, voederschemaPerPaard] = await Promise.all([
+  // Laad berichten (stal + paard), ongelezen-tellers, zorgacties, voederschema en
+  // het eventueel aangeboden stallingscontract per paard parallel.
+  const [
+    berichtenPerPaard,
+    ongelezenPerPaard,
+    zorgActiesPerPaard,
+    voederschemaPerPaard,
+    aangebodenContractPerPaard,
+  ] = await Promise.all([
     Promise.all(horses.map((h) => getMessagesForHorseView(h.id, 6))),
     Promise.all(horses.map((h) => getUnreadCountForHorseView(user.id, h.id))),
     Promise.all(horses.map((h) => getZorgActiesVoorPaard(h.id, 60))),
     Promise.all(horses.map((h) => getFeedingPlan(h.id))),
+    Promise.all(horses.map((h) => getAangebodenContractVoorEigenaar(h.id, user.id))),
   ])
 
   return (
@@ -44,6 +55,7 @@ export default async function EigenaarPage() {
           {horses.map((horse, index) => {
             const leeftijd = horse.dateOfBirth ? berekenLeeftijd(new Date(horse.dateOfBirth)) : null
             const berichten = berichtenPerPaard[index]
+            const aangebodenContract = aangebodenContractPerPaard[index]
             const zorgActies = zorgActiesPerPaard[index]
             const verlopenActies = zorgActies.filter((a) => a.isVerlopen)
             const voederschema = voederschemaPerPaard[index]
@@ -83,6 +95,42 @@ export default async function EigenaarPage() {
                   </Link>
                 </div>
                 <div className="panel-body">
+                  {aangebodenContract && (
+                    <div
+                      style={{
+                        marginBottom: 16,
+                        paddingBottom: 16,
+                        borderBottom: '1px solid var(--velaro-color-border)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          marginBottom: 12,
+                        }}
+                      >
+                        <div className="label" style={{ margin: 0 }}>Contract</div>
+                        <span className="badge badge-gold">Aangeboden</span>
+                      </div>
+                      <p
+                        style={{
+                          color: 'var(--velaro-color-muted)',
+                          fontSize: '0.875rem',
+                          marginBottom: 12,
+                        }}
+                      >
+                        De stal heeft je een stallingscontract aangeboden. Lees het door
+                        en accepteer of wijs het af.
+                      </p>
+                      <ContractSamenvatting config={aangebodenContract.config} />
+                      <div style={{ marginTop: 16 }}>
+                        <EigenaarContractActies contractId={aangebodenContract.id} />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="label" style={{ marginBottom: 8 }}>Berichten</div>
                   {berichten.length === 0 ? (
                     <p style={{ color: 'var(--velaro-color-muted)', fontSize: '0.875rem' }}>
