@@ -2584,3 +2584,325 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   color: var(--velaro-color-muted-2);
   flex-shrink: 0;
 }
+
+/* ── Contract-stepper (bewerkpagina) ─────────────────────────────────────────
+   Stappen-indeling van de contract-bewerkpagina: blokken links, een sticky
+   stepper rechts en een blauwe overall-progress bovenaan. Gebruikt uitsluitend
+   bestaande designtokens. */
+
+/* Verplicht-veld asterisk */
+.required { color: var(--velaro-color-danger); font-weight: 600; }
+
+/* Subblok-kop binnen een stap (Voer & verzorging, Weidegang, …) */
+.form-subblock-title {
+  font-family: var(--velaro-font-serif, serif);
+  font-size: var(--velaro-text-sm);
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+  margin-bottom: var(--velaro-space-3);
+}
+
+/* Blauwe overall progress (telt complete blokken) */
+.contract-progress {
+  background: var(--velaro-color-info-bg);
+  border: 1px solid var(--velaro-color-info-border);
+  border-radius: var(--velaro-radius-lg);
+  padding: 16px 20px;
+  margin-bottom: var(--velaro-space-6);
+}
+
+.contract-progress-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.contract-progress-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--velaro-color-info);
+}
+
+.contract-progress-title {
+  font-size: var(--velaro-text-sm);
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+  margin-top: 2px;
+}
+
+.contract-progress-pct {
+  font-family: var(--velaro-font-serif, serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--velaro-color-info);
+  line-height: 1;
+}
+.contract-progress-pct span { font-size: 14px; }
+
+.contract-progress-bar {
+  height: 8px;
+  border-radius: var(--velaro-radius-pill);
+  background: rgba(29, 78, 216, 0.12);
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+
+.contract-progress-fill {
+  height: 100%;
+  border-radius: var(--velaro-radius-pill);
+  background: var(--velaro-color-info);
+  transition: width 0.25s ease;
+}
+
+.contract-progress-meta {
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-navy);
+}
+
+/* Twee kolommen: content links, sticky stepper rechts */
+.stepper-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.stepper-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--velaro-space-6);
+  min-width: 0;
+}
+
+/* Een stap-blok links */
+.step-section {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.step-section.is-complete {
+  border-color: var(--velaro-color-success-border);
+}
+
+.step-section-head { gap: 12px; }
+
+.step-section-headwrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.step-section-num {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--velaro-radius-pill);
+  background: var(--velaro-color-surf-2);
+  border: 1px solid var(--velaro-color-border-strong);
+  color: var(--velaro-color-navy);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.step-section.is-complete .step-section-num {
+  background: var(--velaro-color-success);
+  border-color: var(--velaro-color-success);
+  color: #fff;
+}
+
+.step-section-heading {
+  font-family: var(--velaro-font-serif, serif);
+  font-size: var(--velaro-text-md, 15px);
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+}
+
+.step-section-sub {
+  font-size: 11px;
+  color: var(--velaro-color-muted);
+}
+
+/* Sticky stepper-navigatie rechts */
+.stepper-nav { position: sticky; top: 24px; }
+
+.stepper-nav-card {
+  background: var(--velaro-color-surf-1);
+  border: 1px solid var(--velaro-color-border);
+  border-radius: var(--velaro-radius-lg);
+  box-shadow: var(--velaro-shadow-xs);
+  padding: 16px;
+}
+
+.stepper-nav-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--velaro-text-sm);
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+  margin-bottom: 12px;
+}
+.stepper-nav-title span { color: var(--velaro-color-muted); font-weight: 500; }
+
+.stepper-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--velaro-radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+  font-family: var(--velaro-font-sans);
+}
+.step-item:hover { background: var(--velaro-color-surf-2); }
+
+.step-indicator {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--velaro-radius-pill);
+  background: var(--velaro-color-surf-2);
+  border: 1px solid var(--velaro-color-border-strong);
+  color: var(--velaro-color-navy);
+  font-size: 12px;
+  font-weight: 600;
+}
+.step-item.is-complete .step-indicator {
+  background: var(--velaro-color-success);
+  border-color: var(--velaro-color-success);
+  color: #fff;
+}
+
+.step-item-body { flex: 1; min-width: 0; }
+
+.step-item-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.step-item-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--velaro-color-navy);
+}
+
+.step-item-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--velaro-color-muted);
+}
+.step-item.is-complete .step-item-pct { color: var(--velaro-color-success); }
+
+.step-item-sub {
+  font-size: 10px;
+  color: var(--velaro-color-muted);
+  margin: 1px 0 6px;
+}
+
+.step-progress {
+  height: 5px;
+  border-radius: var(--velaro-radius-pill);
+  background: var(--velaro-color-surf-2);
+  overflow: hidden;
+}
+
+.step-progress-fill {
+  height: 100%;
+  border-radius: var(--velaro-radius-pill);
+  background: var(--velaro-color-success);
+  transition: width 0.25s ease;
+}
+
+.stepper-nav-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--velaro-color-border);
+}
+
+/* Toggle/switch (vervangt de oude checkboxes) */
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: var(--velaro-text-sm);
+  color: var(--velaro-color-navy);
+  user-select: none;
+}
+
+.toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: var(--velaro-radius-pill);
+  background: var(--velaro-color-surf-2);
+  border: 1px solid var(--velaro-color-border-strong);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--velaro-color-surf-1);
+  box-shadow: var(--velaro-shadow-xs);
+  transition: transform 0.18s ease;
+}
+
+.toggle-switch input:checked + .toggle-track {
+  background: var(--velaro-color-success);
+  border-color: var(--velaro-color-success);
+}
+
+.toggle-switch input:checked + .toggle-track::after {
+  transform: translateX(18px);
+}
+
+.toggle-switch input:focus-visible + .toggle-track {
+  outline: 2px solid var(--velaro-color-info);
+  outline-offset: 2px;
+}
+
+.toggle-label { line-height: 1.3; }
+
+/* Smaller scherm: stepper onder de content */
+@media (max-width: 900px) {
+  .stepper-layout { grid-template-columns: 1fr; }
+  .stepper-nav { position: static; }
+}

@@ -4,7 +4,7 @@ import { getAuthUser } from '@/lib/auth/session'
 import { getHorse } from '@/features/paarden/queries'
 import { getStableRole } from '@/lib/auth/authorization'
 import { prisma } from '@/lib/prisma'
-import ContractForm from '@/features/contracten/ContractForm'
+import ContractStepperForm from '@/features/contracten/ContractStepperForm'
 import { updateStallingContract } from '@/features/contracten/actions'
 import { leesHuisvesting } from '@/features/contracten/huisvesting'
 import { leesDienstpakket } from '@/features/contracten/dienstpakket'
@@ -103,6 +103,11 @@ export default async function BewerkContractPage({ params }: Props) {
   // Reeds gekoppelde bijlagen (DB-records) voor het beheer-paneel onder het formulier.
   const bijlagen = await getBijlagenVoorContract(contractId)
 
+  // Of er een stalreglement-bijlage gekoppeld is — bepaalt mede de compleetheid van
+  // het Bijlagen-blok wanneer "stalreglement verplicht" aanstaat (mirror van de
+  // aanbied-validatie, die ditzelfde feit gebruikt).
+  const heeftStalreglement = bijlagen.some((b) => b.categorie === 'STALREGLEMENT')
+
   // Voorvulwaarden uit het voederschema van het paard; null wanneer er geen
   // FeedingPlan is, zodat de overnemen-knop in het formulier wordt uitgeschakeld.
   const feedingPlan = await getFeedingPlan(id)
@@ -124,8 +129,9 @@ export default async function BewerkContractPage({ params }: Props) {
         <h1 className="page-title">{horse.name}</h1>
       </div>
 
-      <ContractForm
+      <ContractStepperForm
         horseId={id}
+        contractId={contractId}
         action={action}
         owners={owners}
         defaultCounterpartyUserId={contract.counterpartyUserId ?? undefined}
@@ -139,6 +145,7 @@ export default async function BewerkContractPage({ params }: Props) {
         berijder={berijder}
         bijlagenConfig={bijlagenConfig}
         extraDiensten={extraDiensten}
+        heeftStalreglement={heeftStalreglement}
         submitLabel="Wijzigingen opslaan"
       />
 
