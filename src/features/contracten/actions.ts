@@ -33,6 +33,11 @@ import {
   type GezondheidsplichtConfig,
   type VaccinatieSoort,
 } from './gezondheidsplicht'
+import { assertOvergangToegestaan, leesStatusHistorie } from './statusMachine'
+import {
+  ontbrekendeAanbiedVelden,
+  ontbrekendeVeldenSamenvatting,
+} from './aanbiedValidatie'
 
 // Leest de huisvesting-opties (STAL-03) uit het formulier. Onbekende boxtypes
 // vallen terug op null; lege tekstvelden worden genormaliseerd naar null.
@@ -426,4 +431,84 @@ export async function deleteStallingContract(horseId: string, contractId: string
   await prisma.contract.delete({ where: { id: contractId } })
 
   revalidatePath(`/paarden/${horseId}`)
+}
+
+// Biedt een concept-contract aan de paardeigenaar aan (STAL-08, #81). Server-side
+// afgedwongen: alleen OWNER/STAFF, alleen de toegestane overgang CONCEPT →
+// AANGEBODEN, en alleen wanneer alle verplichte optieblokken volledig zijn. Het
+// aanbiedmoment wordt append-only in config.statusHistorie vastgelegd (geen
+// schemawijziging) en de wederpartij krijgt een melding via een Message op het paard.
+export async function offerContract(horseId: string, contractId: string) {
+  // Autorisatie: alleen OWNER/STAFF van de stal van het paard. Paardeigenaren
+  // (zonder stalrol) worden hierdoor geweigerd.
+  const { user } = await getAuthorizedStaff(horseId)
+
+  const contract = await prisma.contract.findUnique({ where: { id: contractId } })
+  if (!contract || contract.horseId !== horseId) {
+    throw new Error('Contract niet gevonden')
+  }
+
+  // Statusmachine: een niet-toegestane overgang (bv. aanbieden van een contract
+  // dat niet in CONCEPT staat) wordt geweigerd.
+  assertOvergangToegestaan(contract.status, 'AANGEBODEN')
+
+  // Er moet een wederpartij gekozen zijn om de melding aan te richten.
+  if (!contract.counterpartyUserId) {
+    throw new Error('Kies eerst een wederpartij (paardeigenaar) voordat je aanbiedt.')
+  }
+
+  // Verplicht-veld-validatie: alle verplichte optieblokken moeten volledig zijn.
+  const ontbreekt = ontbrekendeAanbiedVelden(contract.config)
+  if (ontbreekt.length > 0) {
+    throw new Error(
+      `Het contract is nog niet compleet en kan niet worden aangeboden. Ontbreekt nog — ${ontbrekendeVeldenSamenvatting(
+        ontbreekt,
+      )}.`,
+    )
+  }
+
+  // Aanbiedmoment append-only vastleggen in config.statusHistorie.
+  const bestaandeConfig =
+    contract.config && typeof contract.config === 'object' && !Array.isArray(contract.config)
+      ? (contract.config as Record<string, unknown>)
+      : {}
+  const historie = leesStatusHistorie(contract.config)
+  const nieuweConfig = {
+    ...bestaandeConfig,
+    statusHistorie: [
+      ...historie,
+      {
+        van: 'CONCEPT',
+        naar: 'AANGEBODEN',
+        op: new Date().toISOString(),
+        doorUserId: user.id,
+      },
+    ],
+  }
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { name: true },
+  })
+
+  // Statuswijziging + melding in één transactie.
+  await prisma.$transaction([
+    prisma.contract.update({
+      where: { id: contractId },
+      data: { status: 'AANGEBODEN', config: nieuweConfig },
+    }),
+    prisma.message.create({
+      data: {
+        horseId,
+        authorId: user.id,
+        subject: 'Nieuw stallingscontract aangeboden',
+        body: `Er is een stallingscontract aangeboden voor ${
+          horse?.name ?? 'je paard'
+        }. Bekijk en beoordeel het aanbod.`,
+      },
+    }),
+  ])
+
+  revalidatePath(`/paarden/${horseId}`)
+  revalidatePath('/eigenaar')
 }

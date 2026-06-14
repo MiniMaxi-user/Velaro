@@ -139,6 +139,21 @@ export function leesDienstpakket(
   return { voer, weidegang, faciliteiten }
 }
 
+// ── Compleetheid vóór aanbieden (STAL-08, #81) ───────────────────────────────
+// Verplichte velden om te mogen aanbieden: de ruwvoer-opgave, en — bij actieve
+// weidegang — de weidegang-vorm. Geeft begrijpelijke labels van de ontbrekende
+// velden terug (lege lijst = compleet).
+export function ontbrekendeDienstpakketVelden(blok: DienstpakketConfig): string[] {
+  const ontbreekt: string[] = []
+  if (!blok.voer.ruwvoer) {
+    ontbreekt.push('Ruwvoer-opgave')
+  }
+  if (blok.weidegang.actief && !blok.weidegang.vorm) {
+    ontbreekt.push('Weidegang-vorm (bij actieve weidegang)')
+  }
+  return ontbreekt
+}
+
 export function weidegangVormLabel(vorm: WeidegangVorm | null): string {
   return vorm ? WEIDEGANG_VORM_LABELS[vorm] : '—'
 }

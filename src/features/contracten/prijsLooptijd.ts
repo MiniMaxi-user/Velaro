@@ -155,6 +155,21 @@ export const LEEG_PRIJS_LOOPTIJD: PrijsLooptijdConfig = {
   },
 }
 
+// ── Compleetheid vóór aanbieden (STAL-08, #81) ───────────────────────────────
+// Verplichte velden om een contract te mogen aanbieden: de pensionprijs én — bij
+// bepaalde tijd — de einddatum. De helper geeft begrijpelijke labels van de
+// ontbrekende velden terug, zodat zowel de server-poort als de UI ze kan gebruiken.
+export function ontbrekendePrijsLooptijdVelden(blok: PrijsLooptijdConfig): string[] {
+  const ontbreekt: string[] = []
+  if (blok.prijs.bedrag === null) {
+    ontbreekt.push('Pensionprijs')
+  }
+  if (blok.looptijd.aard === 'BEPAALD' && !blok.looptijd.einddatum) {
+    ontbreekt.push('Einddatum (bij bepaalde tijd)')
+  }
+  return ontbreekt
+}
+
 // ── Validatie ────────────────────────────────────────────────────────────────
 // Een opzegtermijn korter dan 1 kalendermaand. Wordt zowel client-side (waarschuwing)
 // als ter informatie gebruikt; harde weigeringen gebeuren in de server-action.

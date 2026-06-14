@@ -66,3 +66,14 @@ export function leesHuisvesting(config: Prisma.JsonValue | null | undefined): Hu
 export function boxtypeLabel(boxtype: Boxtype | null): string {
   return boxtype ? BOXTYPE_LABELS[boxtype] : '—'
 }
+
+// ── Compleetheid vóór aanbieden (STAL-08, #81) ───────────────────────────────
+// Verplicht veld om te mogen aanbieden: het boxtype moet gekozen zijn. Geeft
+// begrijpelijke labels van de ontbrekende velden terug (lege lijst = compleet).
+export function ontbrekendeHuisvestingVelden(blok: HuisvestingConfig): string[] {
+  const ontbreekt: string[] = []
+  if (!blok.boxtype) {
+    ontbreekt.push('Boxtype')
+  }
+  return ontbreekt
+}

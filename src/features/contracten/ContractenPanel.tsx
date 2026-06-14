@@ -12,7 +12,8 @@ import {
 import type { NalevingRegel } from './queries'
 import NieuwContractKnop from './NieuwContractKnop'
 import ContractActies from './ContractActies'
-import type { ContractStatus } from '@prisma/client'
+import { ontbrekendeAanbiedVelden } from './aanbiedValidatie'
+import type { ContractStatus, Prisma } from '@prisma/client'
 
 type ContractRow = {
   id: string
@@ -20,6 +21,8 @@ type ContractRow = {
   status: ContractStatus
   startDate: Date | null
   createdAt: Date
+  config: Prisma.JsonValue | null
+  counterpartyUserId: string | null
   counterparty: { id: string; name: string | null; email: string } | null
 }
 
@@ -78,7 +81,12 @@ export default function ContractenPanel({
                       </td>
                       <td>
                         {c.status === 'CONCEPT' && (
-                          <ContractActies horseId={horseId} contractId={c.id} />
+                          <ContractActies
+                            horseId={horseId}
+                            contractId={c.id}
+                            heeftWederpartij={Boolean(c.counterpartyUserId)}
+                            ontbrekendeVelden={ontbrekendeAanbiedVelden(c.config)}
+                          />
                         )}
                       </td>
                     </tr>

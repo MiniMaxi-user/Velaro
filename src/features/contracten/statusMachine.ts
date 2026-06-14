@@ -1,0 +1,74 @@
+import type { ContractStatus } from '@prisma/client'
+
+// ── Statusmachine voor contracten (STAL-08, #81) ─────────────────────────────
+// Eén bron van waarheid voor de toegestane statusovergangen van een contract.
+// Voor deze story is alleen de overgang CONCEPT → AANGEBODEN relevant; de map is
+// zo opgezet dat latere stories (accepteren/afwijzen, versionering, beëindigen)
+// er overgangen aan toevoegen zonder de aanroepers te wijzigen.
+
+// Toegestane vervolgstatussen per huidige status. Een lege lijst betekent dat er
+// (nog) geen overgang vanaf die status gedefinieerd is.
+export const TOEGESTANE_OVERGANGEN: Record<ContractStatus, ContractStatus[]> = {
+  CONCEPT: ['AANGEBODEN'],
+  AANGEBODEN: [],
+  GEACCEPTEERD: [],
+  ACTIEF: [],
+  OPGESCHORT: [],
+  OPZEGGING_LOOPT: [],
+  VERLENGD: [],
+  BEEINDIGD: [],
+  VERLOPEN: [],
+  GEANNULEERD: [],
+  AFGEWEZEN: [],
+  VERVANGEN: [],
+}
+
+// Geeft `true` wanneer de overgang van `van` naar `naar` is toegestaan.
+export function isOvergangToegestaan(
+  van: ContractStatus,
+  naar: ContractStatus,
+): boolean {
+  return TOEGESTANE_OVERGANGEN[van]?.includes(naar) ?? false
+}
+
+// Valideert een statusovergang en gooit een fout wanneer die niet is toegestaan.
+// Wordt server-side gebruikt zodat een niet-toegestane overgang altijd geweigerd
+// wordt, ongeacht de client.
+export function assertOvergangToegestaan(
+  van: ContractStatus,
+  naar: ContractStatus,
+): void {
+  if (!isOvergangToegestaan(van, naar)) {
+    throw new Error(
+      `Statusovergang van ${van} naar ${naar} is niet toegestaan.`,
+    )
+  }
+}
+
+// ── Statushistorie in Contract.config (geen schemawijziging) ─────────────────
+// Append-only log van statusovergangen. Het aanbiedmoment is de eerste entry
+// { van: "CONCEPT", naar: "AANGEBODEN", op, doorUserId }.
+export type StatusHistorieEntry = {
+  van: ContractStatus
+  naar: ContractStatus
+  op: string // ISO-timestamp
+  doorUserId: string
+}
+
+// Leest de statushistorie defensief uit het config-JSON van een contract.
+export function leesStatusHistorie(
+  config: unknown,
+): StatusHistorieEntry[] {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return []
+  const root = (config as Record<string, unknown>).statusHistorie
+  if (!Array.isArray(root)) return []
+  return root.filter(
+    (e): e is StatusHistorieEntry =>
+      !!e &&
+      typeof e === 'object' &&
+      typeof (e as Record<string, unknown>).van === 'string' &&
+      typeof (e as Record<string, unknown>).naar === 'string' &&
+      typeof (e as Record<string, unknown>).op === 'string' &&
+      typeof (e as Record<string, unknown>).doorUserId === 'string',
+  )
+}
